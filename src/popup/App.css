@@ -1,0 +1,618 @@
+* {
+  box-sizing: border-box;
+  margin: 0;
+  padding: 0;
+}
+
+body {
+  font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", sans-serif;
+  font-size: 14px;
+  background: #ffffff;
+  color: #1a1a1a;
+}
+
+.app {
+  width: 100%;
+  min-height: 100vh;
+  display: flex;
+  flex-direction: column;
+}
+
+header {
+  padding: 12px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+}
+
+.logo {
+  font-weight: 700;
+  font-size: 15px;
+  color: #111;
+}
+
+.logs-toggle {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  color: #6b7280;
+  background: transparent;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  cursor: pointer;
+}
+
+.logs-toggle:hover {
+  background: #f3f4f6;
+}
+
+/* Log Viewer */
+.log-viewer {
+  display: flex;
+  flex-direction: column;
+  height: 100%;
+  overflow: hidden;
+}
+
+.log-viewer__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  padding: 8px 16px;
+  border-bottom: 1px solid #e5e7eb;
+  background: #f9fafb;
+}
+
+.log-viewer__count {
+  flex: 1;
+  font-size: 12px;
+  color: #9ca3af;
+}
+
+.log-viewer__toolbar button {
+  padding: 4px 10px;
+  font-size: 12px;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
+  border-radius: 5px;
+  background: #fff;
+  cursor: pointer;
+  color: #374151;
+}
+
+.log-viewer__toolbar button:hover {
+  background: #f3f4f6;
+}
+
+.log-viewer__empty {
+  padding: 32px 16px;
+  text-align: center;
+  color: #9ca3af;
+  font-size: 13px;
+}
+
+.log-viewer__list {
+  list-style: none;
+  overflow-y: auto;
+  flex: 1;
+  padding: 8px 0;
+}
+
+.log-viewer__entry {
+  display: grid;
+  grid-template-columns: 64px 40px 72px 1fr;
+  gap: 6px;
+  padding: 5px 16px;
+  font-size: 12px;
+  border-bottom: 1px solid #f3f4f6;
+  align-items: start;
+}
+
+.log-viewer__entry:hover {
+  background: #f9fafb;
+}
+
+.log-viewer__time {
+  color: #9ca3af;
+  font-variant-numeric: tabular-nums;
+}
+
+.log-viewer__level {
+  font-weight: 700;
+  font-size: 10px;
+}
+
+.log-viewer__context {
+  color: #6366f1;
+  font-weight: 500;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.log-viewer__message {
+  color: #374151;
+  word-break: break-word;
+}
+
+main {
+  padding: 16px;
+  flex: 1;
+}
+
+/* Loading */
+.loading {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 0;
+  color: #6b7280;
+}
+
+.spinner {
+  width: 28px;
+  height: 28px;
+  border: 3px solid #e5e7eb;
+  border-top-color: #6366f1;
+  border-radius: 50%;
+  animation: spin 0.8s linear infinite;
+}
+
+@keyframes spin {
+  to { transform: rotate(360deg); }
+}
+
+/* Summary */
+.summary {
+  display: flex;
+  flex-direction: column;
+  gap: 14px;
+}
+
+.badge {
+  display: inline-block;
+  background: #ede9fe;
+  color: #5b21b6;
+  font-size: 12px;
+  font-weight: 500;
+  padding: 3px 10px;
+  border-radius: 999px;
+  width: fit-content;
+}
+
+section h2 {
+  font-size: 11px;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: #9ca3af;
+  margin-bottom: 6px;
+}
+
+section p {
+  line-height: 1.6;
+  color: #374151;
+}
+
+section ul {
+  padding-left: 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+section ul li {
+  line-height: 1.5;
+  color: #374151;
+}
+
+p.tone {
+  font-style: italic;
+  color: #6b7280;
+  font-size: 13px;
+  border-left: 3px solid #e5e7eb;
+  padding-left: 10px;
+}
+
+/* Toolbar */
+.toolbar {
+  display: flex;
+  gap: 8px;
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+}
+
+.toolbar button,
+.toolbar a {
+  flex: 1;
+  padding: 7px 0;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  font-size: 13px;
+  font-weight: 500;
+  color: #374151;
+  cursor: pointer;
+  text-align: center;
+  text-decoration: none;
+  transition: background 0.15s;
+}
+
+.toolbar button:hover,
+.toolbar a:hover {
+  background: #f3f4f6;
+}
+
+/* States */
+.empty-state,
+.error {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 0;
+  color: #6b7280;
+  text-align: center;
+}
+
+.empty-state a,
+.error button {
+  padding: 8px 20px;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  text-decoration: none;
+}
+
+.error {
+  color: #dc2626;
+}
+
+/* Mode selector */
+.mode-selector {
+  display: flex;
+  gap: 8px;
+  margin-bottom: 14px;
+}
+
+.mode-btn {
+  flex: 1;
+  padding: 9px 0;
+  border-radius: 8px;
+  font-size: 13px;
+  font-weight: 600;
+  border: 1.5px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.mode-btn:hover {
+  border-color: #6366f1;
+  color: #4f46e5;
+}
+
+.mode-btn--active {
+  background: #6366f1;
+  border-color: #6366f1;
+  color: #fff;
+}
+
+/* Speech Player */
+.speech-player {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  padding: 0 0 12px;
+  border-bottom: 1px solid #e5e7eb;
+  margin-bottom: 14px;
+}
+
+/* Engine toggle */
+.speech-engine {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.speech-engine__btn {
+  padding: 5px 12px;
+  border-radius: 999px;
+  font-size: 12px;
+  font-weight: 600;
+  border: 1px solid #e5e7eb;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.15s;
+}
+
+.speech-engine__btn--active {
+  background: #6366f1;
+  color: #fff;
+  border-color: #6366f1;
+}
+
+.speech-engine__reset {
+  background: none;
+  border: none;
+  cursor: pointer;
+  font-size: 14px;
+  padding: 0 4px;
+  opacity: 0.6;
+}
+
+.speech-engine__reset:hover { opacity: 1; }
+
+/* ElevenLabs key setup */
+.speech-el-setup {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+  flex-wrap: wrap;
+}
+
+.speech-el-setup input {
+  flex: 1;
+  min-width: 0;
+  padding: 6px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  font-family: monospace;
+  outline: none;
+}
+
+.speech-el-setup input:focus { border-color: #6366f1; }
+
+.speech-el-setup button {
+  padding: 6px 12px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 12px;
+  font-weight: 600;
+  cursor: pointer;
+}
+
+.speech-el-setup button:disabled { opacity: 0.5; cursor: not-allowed; }
+
+.speech-el-setup a {
+  font-size: 11px;
+  color: #6366f1;
+  text-decoration: none;
+  white-space: nowrap;
+}
+
+/* Voice selector */
+.speech-voice {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 12px;
+}
+
+.speech-voice label {
+  font-weight: 600;
+  color: #6b7280;
+  white-space: nowrap;
+}
+
+.speech-voice select {
+  flex: 1;
+  padding: 5px 8px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 12px;
+  color: #374151;
+  background: #fff;
+  outline: none;
+  cursor: pointer;
+}
+
+.speech-voice select:focus {
+  border-color: #6366f1;
+}
+
+.speech-voice__hint {
+  color: #9ca3af;
+  white-space: nowrap;
+  font-size: 11px;
+}
+
+.speech-player__controls {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.speech-btn {
+  padding: 7px 14px;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  transition: background 0.15s, opacity 0.15s;
+}
+
+.speech-btn--play {
+  background: #6366f1;
+  color: white;
+}
+
+.speech-btn--play:hover {
+  background: #4f46e5;
+}
+
+.speech-btn--pause {
+  background: #f3f4f6;
+  color: #374151;
+  border: 1px solid #e5e7eb;
+}
+
+.speech-btn--pause:hover {
+  background: #e5e7eb;
+}
+
+.speech-btn--stop {
+  background: #fee2e2;
+  color: #dc2626;
+  padding: 7px 10px;
+}
+
+.speech-btn--stop:hover {
+  background: #fecaca;
+}
+
+.speech-rate {
+  display: flex;
+  gap: 4px;
+  margin-left: auto;
+}
+
+.speech-rate__btn {
+  padding: 4px 7px;
+  font-size: 11px;
+  font-weight: 500;
+  border: 1px solid #e5e7eb;
+  border-radius: 4px;
+  background: #fff;
+  color: #6b7280;
+  cursor: pointer;
+  transition: all 0.1s;
+}
+
+.speech-rate__btn:hover {
+  background: #f3f4f6;
+}
+
+.speech-rate__btn--active {
+  background: #ede9fe;
+  color: #5b21b6;
+  border-color: #c4b5fd;
+  font-weight: 700;
+}
+
+.speech-player__status {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-size: 12px;
+  color: #6366f1;
+  font-weight: 500;
+}
+
+.speech-player__status--paused {
+  color: #9ca3af;
+}
+
+.speech-pulse {
+  width: 8px;
+  height: 8px;
+  background: #6366f1;
+  border-radius: 50%;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+@keyframes pulse {
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.75); }
+}
+
+/* Token Setup */
+.token-setup {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 12px;
+  padding: 32px 16px;
+  text-align: center;
+}
+
+.token-setup__icon {
+  font-size: 32px;
+}
+
+.token-setup h2 {
+  font-size: 16px;
+  font-weight: 700;
+  color: #111;
+}
+
+.token-setup p {
+  font-size: 13px;
+  color: #6b7280;
+  line-height: 1.5;
+}
+
+.token-setup__field {
+  width: 100%;
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.token-setup__field input {
+  width: 100%;
+  padding: 10px 12px;
+  border: 1px solid #d1d5db;
+  border-radius: 8px;
+  font-size: 13px;
+  font-family: monospace;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.token-setup__field input:focus {
+  border-color: #6366f1;
+}
+
+.token-setup__error {
+  font-size: 12px;
+  color: #dc2626;
+  text-align: left;
+}
+
+.token-setup button {
+  width: 100%;
+  padding: 10px 0;
+  background: #6366f1;
+  color: white;
+  border: none;
+  border-radius: 8px;
+  font-size: 14px;
+  font-weight: 600;
+  cursor: pointer;
+  transition: background 0.15s;
+}
+
+.token-setup button:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.token-setup button:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.token-setup a {
+  font-size: 13px;
+  color: #6366f1;
+  text-decoration: none;
+}
+
+.token-setup a:hover {
+  text-decoration: underline;
+}
