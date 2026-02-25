@@ -531,6 +531,35 @@ p.tone {
   50%       { opacity: 0.4; transform: scale(0.75); }
 }
 
+/* Video header (YouTube / DeepLearning.AI) */
+.video-header {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  margin-bottom: 12px;
+  flex-wrap: wrap;
+}
+
+.video-badge {
+  display: inline-block;
+  background: #fee2e2;
+  color: #b91c1c;
+  font-size: 11px;
+  font-weight: 700;
+  padding: 2px 8px;
+  border-radius: 999px;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.video-title {
+  font-size: 13px;
+  font-weight: 600;
+  color: #111;
+  line-height: 1.4;
+  margin: 0;
+}
+
 /* Token Setup */
 .token-setup {
   display: flex;

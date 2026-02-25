@@ -6,17 +6,23 @@ import { LogViewer } from "./components/LogViewer";
 import { SpeechPlayer } from "./components/SpeechPlayer";
 import { logger } from "../lib/logger";
 import type { SummaryResult, SummaryMode } from "../lib/api";
+import {
+  detectPlatform,
+  extractYouTubeInfoInPage,
+  fetchYouTubeTranscript,
+  extractDeepLearningTranscriptInPage,
+} from "../lib/transcripts";
 import "./App.css";
 
 type State =
   | { status: "idle" }
-  | { status: "loading" }
-  | { status: "done"; result: SummaryResult; timeSaved: number }
+  | { status: "loading"; platform?: string }
+  | { status: "done"; result: SummaryResult; timeSaved: number; videoTitle?: string; platform?: string }
   | { status: "error"; message: string }
   | { status: "no-key" };
 
 function estimateReadingTime(wordCount: number): number {
-  return Math.ceil(wordCount / 200); // avg reading speed
+  return Math.ceil(wordCount / 200);
 }
 
 function buildReadableText(result: SummaryResult): string {
@@ -75,10 +81,15 @@ function extractPageTextInPage(): string {
   return (clone.textContent ?? "").replace(/\s+/g, " ").trim();
 }
 
+const PLATFORM_LABELS: Record<string, string> = {
+  youtube:       "📺 YouTube",
+  deeplearning:  "🎓 DeepLearning.AI",
+};
+
 export default function App() {
-  const [state, setState]   = useState<State>({ status: "idle" });
+  const [state, setState]       = useState<State>({ status: "idle" });
   const [showLogs, setShowLogs] = useState(false);
-  const [mode, setMode]     = useState<SummaryMode>("exploratory");
+  const [mode, setMode]         = useState<SummaryMode>("exploratory");
 
   useEffect(() => {
     runSummary("exploratory");
@@ -101,30 +112,66 @@ export default function App() {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab.id) throw new Error("No active tab");
 
-      await logger.info("panel", `Extracting text from tab ${tab.id}: ${tab.url}`);
+      const platform = detectPlatform(tab.url ?? "");
+      setState({ status: "loading", platform: platform ?? undefined });
+      await logger.info("panel", `Platform: ${platform ?? "web"} — tab ${tab.id}: ${tab.url}`);
 
-      const results = await chrome.scripting.executeScript({
-        target: { tabId: tab.id },
-        func: extractPageTextInPage,
-      });
+      let text = "";
+      let videoTitle: string | undefined;
 
-      const text: string = results[0]?.result ?? "";
+      // ── YouTube ─────────────────────────────────────────────────────────────
+      if (platform === "youtube") {
+        const ytResults = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: extractYouTubeInfoInPage,
+        });
+        const ytInfo = ytResults[0]?.result;
+
+        if (!ytInfo) throw new Error("Could not read YouTube player data. Try refreshing the page.");
+        if (!ytInfo.captionUrl) throw new Error("This video has no captions available. QuickRead needs subtitles to summarize a video.");
+
+        videoTitle = ytInfo.title;
+        await logger.info("panel", `YouTube: fetching transcript for "${videoTitle}"`);
+        text = await fetchYouTubeTranscript(ytInfo.captionUrl);
+
+      // ── DeepLearning.AI ──────────────────────────────────────────────────────
+      } else if (platform === "deeplearning") {
+        const dlResults = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: extractDeepLearningTranscriptInPage,
+        });
+        const dlInfo = dlResults[0]?.result;
+
+        if (!dlInfo) throw new Error("Could not extract transcript from this DeepLearning.AI page.");
+
+        videoTitle = dlInfo.title;
+        text = dlInfo.transcript;
+        await logger.info("panel", `DeepLearning.AI: extracted transcript for "${videoTitle}"`);
+
+      // ── Regular web page ─────────────────────────────────────────────────────
+      } else {
+        const results = await chrome.scripting.executeScript({
+          target: { tabId: tab.id },
+          func: extractPageTextInPage,
+        });
+        text = results[0]?.result ?? "";
+      }
+
       const wordCount = text.split(/\s+/).length;
       await logger.info("panel", `Extracted ${wordCount} words`);
 
-      // Save raw text to logs/page-text.txt for future experimentation
+      // Save for experimentation
       fetch("http://localhost:3747/save-text", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ url: tab.url, text, wordCount, ts: Date.now() }),
-      }).catch(() => {}); // fire-and-forget, don't block if server is down
+      }).catch(() => {});
 
       if (wordCount < 20) {
         throw new Error("Not enough content found on this page to summarize.");
       }
 
       const timeSaved = estimateReadingTime(wordCount);
-
       const response = await chrome.runtime.sendMessage({
         type: "SUMMARIZE",
         payload: { text, apiKey: geminiApiKey, mode: activeMode },
@@ -133,17 +180,16 @@ export default function App() {
       if (!response.success) throw new Error(response.error);
 
       await logger.info("panel", "Summary received and rendered");
-      setState({
-        status: "done",
-        result: response.result,
-        timeSaved,
-      });
+      setState({ status: "done", result: response.result, timeSaved, videoTitle, platform: platform ?? undefined });
+
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
       await logger.error("panel", `Error: ${message}`);
       setState({ status: "error", message });
     }
   }
+
+  const loadingPlatform = state.status === "loading" ? state.platform : undefined;
 
   return (
     <div className="app">
@@ -167,7 +213,7 @@ export default function App() {
         {state.status === "loading" && (
           <div className="loading">
             <div className="spinner" />
-            <p>Summarizing page...</p>
+            <p>{loadingPlatform ? `Extracting transcript...` : "Summarizing page..."}</p>
           </div>
         )}
 
@@ -201,6 +247,14 @@ export default function App() {
 
         {state.status === "done" && (
           <>
+            {state.videoTitle && (
+              <div className="video-header">
+                <span className="video-badge">
+                  {PLATFORM_LABELS[state.platform ?? ""] ?? "📺 Video"}
+                </span>
+                <p className="video-title">{state.videoTitle}</p>
+              </div>
+            )}
             <SpeechPlayer text={buildReadableText(state.result)} />
             <Summary result={state.result} readingTimeSaved={state.timeSaved} />
             <Toolbar summary={state.result.tldr} onRefresh={() => runSummary()} />
