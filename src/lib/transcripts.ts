@@ -20,17 +20,38 @@ export async function extractYouTubeInfoInPage(): Promise<{ captionUrl: string |
   try {
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
-    // ytInitialPlayerResponse may not be set yet if the extension opens before
-    // the page JS has fully executed. Poll for up to 4 seconds.
+    // Helper: validate that player data matches the current URL's video ID.
+    // On YouTube SPA navigation ytInitialPlayerResponse can be stale.
+    const currentVideoId = new URLSearchParams(window.location.search).get("v") ?? "";
+    const playerMatchesUrl = (p: any) =>
+      p && (!currentVideoId || (p?.videoDetails?.videoId ?? "") === currentVideoId);
+
+    // Poll for up to 6 seconds (12 × 500ms) for a matching ytInitialPlayerResponse
     let player = (window as any).ytInitialPlayerResponse;
-    if (!player) {
-      for (let attempt = 0; attempt < 8; attempt++) {
+    if (!playerMatchesUrl(player)) {
+      for (let attempt = 0; attempt < 12; attempt++) {
         await sleep(500);
         player = (window as any).ytInitialPlayerResponse;
-        if (player) break;
+        if (playerMatchesUrl(player)) break;
       }
     }
-    if (!player) return null;
+
+    // Fallback: scrape ytInitialPlayerResponse from inline <script> tags
+    // (present on hard-load; may be more reliable than the window global after SPA nav)
+    if (!playerMatchesUrl(player)) {
+      const scripts = Array.from(document.querySelectorAll("script:not([src])"));
+      for (const s of scripts) {
+        const match = s.textContent?.match(/var ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
+        if (match) {
+          try {
+            const parsed = JSON.parse(match[1]);
+            if (playerMatchesUrl(parsed)) { player = parsed; break; }
+          } catch { /* malformed JSON — skip */ }
+        }
+      }
+    }
+
+    if (!playerMatchesUrl(player)) return null;
 
     const title: string = player?.videoDetails?.title ?? "YouTube Video";
     const tracks: any[] =
@@ -62,13 +83,43 @@ export async function extractYouTubeInfoInPage(): Promise<{ captionUrl: string |
 export async function fetchYouTubeTranscript(captionUrl: string): Promise<string> {
   const resp = await fetch(captionUrl);
   if (!resp.ok) throw new Error(`Caption fetch failed: ${resp.status}`);
-  const data = await resp.json();
 
-  return (data.events ?? [])
-    .flatMap((evt: any) => (evt.segs ?? []).map((s: any) => (s.utf8 ?? "").replace(/\n/g, " ")))
-    .join(" ")
-    .replace(/\s+/g, " ")
-    .trim();
+  const bodyText = await resp.text();
+  if (!bodyText || bodyText.trim().length === 0) {
+    throw new Error("Caption response was empty. The captions URL may have expired — try refreshing the page.");
+  }
+
+  // YouTube caption URLs can return either JSON3 format or XML (ttml/srv3).
+  // Try JSON first; fall back to XML text extraction.
+  if (bodyText.trimStart().startsWith("{")) {
+    let data: any;
+    try {
+      data = JSON.parse(bodyText);
+    } catch (e) {
+      throw new Error(`Caption JSON parse failed: ${(e as Error).message}`);
+    }
+    return (data.events ?? [])
+      .flatMap((evt: any) => (evt.segs ?? []).map((s: any) => (s.utf8 ?? "").replace(/\n/g, " ")))
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+  }
+
+  // XML fallback: extract all <text> element content from ttml/srv3 format
+  if (bodyText.trimStart().startsWith("<")) {
+    const parser = new DOMParser();
+    const doc = parser.parseFromString(bodyText, "application/xml");
+    const textEls = Array.from(doc.querySelectorAll("text, p"));
+    const extracted = textEls
+      .map((el) => (el.textContent ?? "").replace(/\n/g, " ").trim())
+      .filter(Boolean)
+      .join(" ")
+      .replace(/\s+/g, " ")
+      .trim();
+    if (extracted.length > 0) return extracted;
+  }
+
+  throw new Error("Caption response format not recognised (expected JSON3 or XML).");
 }
 
 // ─── DeepLearning.AI ──────────────────────────────────────────────────────────
