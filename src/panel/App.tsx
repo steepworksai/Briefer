@@ -88,11 +88,11 @@ export default function App() {
     const activeMode = selectedMode ?? mode;
     setMode(activeMode);
     setState({ status: "loading" });
-    await logger.info("popup", `Starting summarization [${activeMode}]`);
+    await logger.info("panel", `Starting summarization [${activeMode}]`);
 
     const { geminiApiKey } = await chrome.storage.sync.get("geminiApiKey");
     if (!geminiApiKey) {
-      await logger.warn("popup", "No API key found — showing token setup");
+      await logger.warn("panel", "No API key found — showing token setup");
       setState({ status: "no-key" });
       return;
     }
@@ -101,7 +101,7 @@ export default function App() {
       const [tab] = await chrome.tabs.query({ active: true, currentWindow: true });
       if (!tab.id) throw new Error("No active tab");
 
-      await logger.info("popup", `Extracting text from tab ${tab.id}: ${tab.url}`);
+      await logger.info("panel", `Extracting text from tab ${tab.id}: ${tab.url}`);
 
       const results = await chrome.scripting.executeScript({
         target: { tabId: tab.id },
@@ -110,7 +110,7 @@ export default function App() {
 
       const text: string = results[0]?.result ?? "";
       const wordCount = text.split(/\s+/).length;
-      await logger.info("popup", `Extracted ${wordCount} words`);
+      await logger.info("panel", `Extracted ${wordCount} words`);
 
       // Save raw text to logs/page-text.txt for future experimentation
       fetch("http://localhost:3747/save-text", {
@@ -132,7 +132,7 @@ export default function App() {
 
       if (!response.success) throw new Error(response.error);
 
-      await logger.info("popup", "Summary received and rendered");
+      await logger.info("panel", "Summary received and rendered");
       setState({
         status: "done",
         result: response.result,
@@ -140,7 +140,7 @@ export default function App() {
       });
     } catch (err: unknown) {
       const message = err instanceof Error ? err.message : "Something went wrong";
-      await logger.error("popup", `Error: ${message}`);
+      await logger.error("panel", `Error: ${message}`);
       setState({ status: "error", message });
     }
   }
