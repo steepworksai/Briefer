@@ -5,6 +5,22 @@ interface SummaryProps {
   readingTimeSaved: number;
 }
 
+// Renders **bold** and *italic* markdown inline
+function Inline({ text }: { text: string }) {
+  const parts = text.split(/(\*\*[^*]+\*\*|\*[^*]+\*)/g);
+  return (
+    <>
+      {parts.map((part, i) => {
+        if (part.startsWith("**") && part.endsWith("**"))
+          return <strong key={i}>{part.slice(2, -2)}</strong>;
+        if (part.startsWith("*") && part.endsWith("*"))
+          return <em key={i}>{part.slice(1, -1)}</em>;
+        return part;
+      })}
+    </>
+  );
+}
+
 function Section({ title, children }: { title: string; children: React.ReactNode }) {
   return (
     <section>
@@ -18,14 +34,14 @@ function BulletList({ items }: { items: string[] }) {
   if (items.length === 0) return null;
   return (
     <ul>
-      {items.map((item, i) => <li key={i}>{item}</li>)}
+      {items.map((item, i) => <li key={i}><Inline text={item} /></li>)}
     </ul>
   );
 }
 
 function Prose({ text }: { text: string }) {
   if (!text) return null;
-  return <p>{text}</p>;
+  return <p><Inline text={text} /></p>;
 }
 
 export function Summary({ result, readingTimeSaved }: SummaryProps) {
@@ -35,7 +51,7 @@ export function Summary({ result, readingTimeSaved }: SummaryProps) {
 
       {result.tldr && (
         <Section title="TL;DR">
-          <p>{result.tldr}</p>
+          <p><Inline text={result.tldr} /></p>
         </Section>
       )}
 
