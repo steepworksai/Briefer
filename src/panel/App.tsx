@@ -8,8 +8,7 @@ import { logger } from "../lib/logger";
 import type { SummaryResult, SummaryMode } from "../lib/api";
 import {
   detectPlatform,
-  extractYouTubeInfoInPage,
-  fetchYouTubeTranscript,
+  extractYouTubeTranscriptInPage,
   extractDeepLearningTranscriptInPage,
 } from "../lib/transcripts";
 import "./App.css";
@@ -121,19 +120,21 @@ export default function App() {
 
       // ── YouTube ─────────────────────────────────────────────────────────────
       if (platform === "youtube") {
+        // Caption fetch happens inside the page (MAIN world) so YouTube's
+        // signed URLs are called with the page's session — no CORS/expiry issues.
         const ytResults = await chrome.scripting.executeScript({
           target: { tabId: tab.id },
-          func: extractYouTubeInfoInPage,
-          world: "MAIN", // needs page's JS context to read ytInitialPlayerResponse
+          func: extractYouTubeTranscriptInPage,
+          world: "MAIN",
         });
         const ytInfo = ytResults[0]?.result;
 
         if (!ytInfo) throw new Error("Could not read YouTube player data. Try refreshing the page.");
-        if (!ytInfo.captionUrl) throw new Error("This video has no captions available. QuickRead needs subtitles to summarize a video.");
+        if (!ytInfo.transcript) throw new Error("This video has no captions available. QuickRead needs subtitles to summarize a video.");
 
         videoTitle = ytInfo.title;
-        await logger.info("panel", `YouTube: fetching transcript for "${videoTitle}"`);
-        text = await fetchYouTubeTranscript(ytInfo.captionUrl);
+        text = ytInfo.transcript;
+        await logger.info("panel", `YouTube: fetched transcript for "${videoTitle}"`);
 
       // ── DeepLearning.AI ──────────────────────────────────────────────────────
       } else if (platform === "deeplearning") {

@@ -15,8 +15,11 @@ export interface TranscriptResult {
 }
 
 // ─── YouTube ─────────────────────────────────────────────────────────────────
-// Runs inside the page via executeScript — must be self-contained, no imports
-export async function extractYouTubeInfoInPage(): Promise<{ captionUrl: string | null; title: string } | null> {
+// Runs inside the page via executeScript — must be self-contained, no imports.
+// Fetches the caption track entirely within the page context so that YouTube's
+// signed caption URLs (which expire and are CORS-restricted outside the page)
+// are always called with the correct session cookies and origin.
+export async function extractYouTubeTranscriptInPage(): Promise<{ title: string; transcript: string } | null> {
   try {
     const sleep = (ms: number) => new Promise((r) => setTimeout(r, ms));
 
@@ -41,10 +44,10 @@ export async function extractYouTubeInfoInPage(): Promise<{ captionUrl: string |
     if (!playerMatchesUrl(player)) {
       const scripts = Array.from(document.querySelectorAll("script:not([src])"));
       for (const s of scripts) {
-        const match = s.textContent?.match(/var ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
-        if (match) {
+        const m = s.textContent?.match(/var ytInitialPlayerResponse\s*=\s*(\{.+?\});/s);
+        if (m) {
           try {
-            const parsed = JSON.parse(match[1]);
+            const parsed = JSON.parse(m[1]);
             if (playerMatchesUrl(parsed)) { player = parsed; break; }
           } catch { /* malformed JSON — skip */ }
         }
@@ -57,7 +60,7 @@ export async function extractYouTubeInfoInPage(): Promise<{ captionUrl: string |
     const tracks: any[] =
       player?.captions?.playerCaptionsTracklistRenderer?.captionTracks ?? [];
 
-    if (tracks.length === 0) return { captionUrl: null, title };
+    if (tracks.length === 0) return { title, transcript: "" };
 
     // Prefer: manual English > auto-generated English > any track
     const rank = (t: any): number => {
@@ -70,56 +73,76 @@ export async function extractYouTubeInfoInPage(): Promise<{ captionUrl: string |
 
     const best = [...tracks].sort((a, b) => rank(a) - rank(b))[0];
     const raw: string = best.baseUrl ?? "";
-    const captionUrl = raw
-      ? raw + (raw.includes("?") ? "&fmt=json3" : "?fmt=json3")
-      : null;
+    if (!raw) return { title, transcript: "" };
 
-    return { captionUrl, title };
+    // Helper: parse a raw caption response string (JSON3 or XML) into plain text.
+    const parseCaptionBody = (bodyText: string): string => {
+      if (!bodyText || bodyText.trim().length === 0) return "";
+      if (bodyText.trimStart().startsWith("{")) {
+        try {
+          const data = JSON.parse(bodyText);
+          return (data.events ?? [])
+            .flatMap((evt: any) => (evt.segs ?? []).map((s: any) => (s.utf8 ?? "").replace(/\n/g, " ")))
+            .join(" ")
+            .replace(/\s+/g, " ")
+            .trim();
+        } catch { return ""; }
+      }
+      if (bodyText.trimStart().startsWith("<")) {
+        const parser = new DOMParser();
+        const doc = parser.parseFromString(bodyText, "application/xml");
+        const textEls = Array.from(doc.querySelectorAll("text, p"));
+        return textEls
+          .map((el) => (el.textContent ?? "").replace(/\n/g, " ").trim())
+          .filter(Boolean)
+          .join(" ")
+          .replace(/\s+/g, " ")
+          .trim();
+      }
+      return "";
+    };
+
+    // Attempt 1: signed baseUrl + json3 format (from ytInitialPlayerResponse)
+    const signedJson3Url = raw + (raw.includes("?") ? "&fmt=json3" : "?fmt=json3");
+    const resp1 = await fetch(signedJson3Url);
+    if (resp1.ok) {
+      const body1 = await resp1.text();
+      const t1 = parseCaptionBody(body1);
+      if (t1.length > 0) return { title, transcript: t1 };
+    }
+
+    // Attempt 2: signed baseUrl without fmt (may return XML)
+    const resp2 = await fetch(raw);
+    if (resp2.ok) {
+      const body2 = await resp2.text();
+      const t2 = parseCaptionBody(body2);
+      if (t2.length > 0) return { title, transcript: t2 };
+    }
+
+    // Attempt 3: YouTube public timedtext API — works for most videos with auto-captions,
+    // does not require signed parameters or session cookies.
+    const lang = (best.languageCode ?? "en").split("-")[0];
+    const timedtextUrl = `https://www.youtube.com/api/timedtext?v=${encodeURIComponent(currentVideoId)}&lang=${encodeURIComponent(lang)}&fmt=json3`;
+    const resp3 = await fetch(timedtextUrl);
+    if (resp3.ok) {
+      const body3 = await resp3.text();
+      const t3 = parseCaptionBody(body3);
+      if (t3.length > 0) return { title, transcript: t3 };
+    }
+
+    // All caption fetch attempts returned empty — video may have no accessible captions
+    return { title, transcript: "" };
   } catch {
     return null;
   }
 }
 
-export async function fetchYouTubeTranscript(captionUrl: string): Promise<string> {
-  const resp = await fetch(captionUrl);
-  if (!resp.ok) throw new Error(`Caption fetch failed: ${resp.status}`);
+// Keep the old name as an alias so any other callers aren't broken
+export const extractYouTubeInfoInPage = extractYouTubeTranscriptInPage;
 
-  const bodyText = await resp.text();
-  if (!bodyText || bodyText.trim().length === 0) {
-    throw new Error("Caption response was empty. The captions URL may have expired — try refreshing the page.");
-  }
-
-  // YouTube caption URLs can return either JSON3 format or XML (ttml/srv3).
-  // Try JSON first; fall back to XML text extraction.
-  if (bodyText.trimStart().startsWith("{")) {
-    let data: any;
-    try {
-      data = JSON.parse(bodyText);
-    } catch (e) {
-      throw new Error(`Caption JSON parse failed: ${(e as Error).message}`);
-    }
-    return (data.events ?? [])
-      .flatMap((evt: any) => (evt.segs ?? []).map((s: any) => (s.utf8 ?? "").replace(/\n/g, " ")))
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-  }
-
-  // XML fallback: extract all <text> element content from ttml/srv3 format
-  if (bodyText.trimStart().startsWith("<")) {
-    const parser = new DOMParser();
-    const doc = parser.parseFromString(bodyText, "application/xml");
-    const textEls = Array.from(doc.querySelectorAll("text, p"));
-    const extracted = textEls
-      .map((el) => (el.textContent ?? "").replace(/\n/g, " ").trim())
-      .filter(Boolean)
-      .join(" ")
-      .replace(/\s+/g, " ")
-      .trim();
-    if (extracted.length > 0) return extracted;
-  }
-
-  throw new Error("Caption response format not recognised (expected JSON3 or XML).");
+/** @deprecated Use extractYouTubeTranscriptInPage which fetches captions in-page */
+export async function fetchYouTubeTranscript(_captionUrl: string): Promise<string> {
+  throw new Error("fetchYouTubeTranscript is deprecated; use extractYouTubeTranscriptInPage instead.");
 }
 
 // ─── DeepLearning.AI ──────────────────────────────────────────────────────────

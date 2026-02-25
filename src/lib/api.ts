@@ -108,8 +108,8 @@ export async function summarize(
   });
 
   if (!response.ok) {
-    const err = await response.json();
-    throw new Error(err?.error?.message ?? `Gemini API error: ${response.status}`);
+    const err = await response.json().catch(() => ({}));
+    throw new Error((err as any)?.error?.message ?? `Gemini API error: ${response.status}`);
   }
 
   const data = await response.json();
