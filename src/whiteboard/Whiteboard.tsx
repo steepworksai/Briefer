@@ -17,6 +17,10 @@ interface SegShape {
   x1: number; y1: number; x2: number; y2: number;
   color: string;
   label?: string;   // optional midpoint relationship label
+  fromId?: string;
+  toId?: string;
+  fromSide?: "left" | "right";
+  toSide?: "left" | "right";
 }
 interface TextShape {
   id: string; type: "text";
@@ -32,6 +36,7 @@ type DragState =
   | { kind: "draw-line";  x0: number; y0: number }
   | { kind: "draw-arrow"; x0: number; y0: number }
   | { kind: "move-xy";  id: string; x0: number; y0: number; origX: number; origY: number }
+  | { kind: "resize-rect"; id: string; x0: number; y0: number; origW: number; origH: number }
   | { kind: "move-seg"; id: string; x0: number; y0: number;
       origX1: number; origY1: number; origX2: number; origY2: number }
   | { kind: "pan"; cx0: number; cy0: number; origPanX: number; origPanY: number };
@@ -138,6 +143,37 @@ function distToSeg(px: number, py: number, x1: number, y1: number, x2: number, y
   return Math.hypot(px - x1 - t * dx, py - y1 - t * dy);
 }
 
+function clamp(n: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, n));
+}
+
+function rectAnchor(rect: RectShape, side: "left" | "right", targetY: number): { x: number; y: number } {
+  const x = side === "left" ? rect.x : rect.x + rect.w;
+  const y = clamp(targetY, rect.y + 8, rect.y + rect.h - 8);
+  return { x, y };
+}
+
+function relinkSegments(shapes: Shape[]): Shape[] {
+  const rectById = new Map<string, RectShape>();
+  for (const s of shapes) {
+    if (s.type === "rect") rectById.set(s.id, s);
+  }
+
+  return shapes.map(s => {
+    if ((s.type !== "line" && s.type !== "arrow") || !s.fromId || !s.toId) return s;
+    const from = rectById.get(s.fromId);
+    const to   = rectById.get(s.toId);
+    if (!from || !to) return s;
+
+    const fromSide = s.fromSide ?? "right";
+    const toSide   = s.toSide ?? "left";
+    const targetY  = (to.y + to.h / 2 + from.y + from.h / 2) / 2;
+    const p1 = rectAnchor(from, fromSide, targetY);
+    const p2 = rectAnchor(to, toSide, targetY);
+    return { ...s, x1: p1.x, y1: p1.y, x2: p2.x, y2: p2.y };
+  });
+}
+
 // ── Mind map layout ───────────────────────────────────────────────────────────
 
 function buildMindMap(result: SummaryResult, w: number, h: number): Shape[] {
@@ -145,8 +181,8 @@ function buildMindMap(result: SummaryResult, w: number, h: number): Shape[] {
   const N = result.keyPoints.length;
   const rowCount = Math.ceil(N / 2);
 
-  // Mind map uses the top 55% of the canvas
-  const mapH = h * 0.55;
+  // Use nearly full canvas height and keep the topic centered.
+  const mapH = Math.max(220, h - 70);
   const cx = w / 2;
 
   const centerW  = Math.min(w * 0.30, 260);
@@ -180,12 +216,13 @@ function buildMindMap(result: SummaryResult, w: number, h: number): Shape[] {
   const rowDy      = rowCount <= 1 ? 0
     : Math.min(maxBranchH + GAP, usableH / (rowCount - 1));
 
-  const cy = mapH * 0.42;
+  const cy = h / 2;
 
   const tldrText  = stripMd(result.tldr).split(" ").slice(0, 9).join(" ");
   const topicEmoji = pickEmoji(result.tldr);
+  const centerId = uid();
   shapes.push({
-    id: uid(), type: "rect",
+    id: centerId, type: "rect",
     x: cx - centerW / 2, y: cy - centerH / 2,
     w: centerW, h: centerH,
     label: `${topicEmoji} ${tldrText}`,
@@ -206,10 +243,16 @@ function buildMindMap(result: SummaryResult, w: number, h: number): Shape[] {
     const ax2 = bx + (isRight ? -branchW / 2 : branchW / 2);
 
     const arrowLabel = ARROW_LABELS[i % ARROW_LABELS.length];
-    shapes.push({ id: uid(), type: "arrow", x1: ax1, y1: ay1, x2: ax2, y2: by, color: stroke, label: arrowLabel });
+    const branchId = uid();
+    shapes.push({
+      id: uid(), type: "arrow", x1: ax1, y1: ay1, x2: ax2, y2: by, color: stroke, label: arrowLabel,
+      fromId: centerId, toId: branchId,
+      fromSide: isRight ? "right" : "left",
+      toSide: isRight ? "left" : "right",
+    });
 
     shapes.push({
-      id: uid(), type: "rect",
+      id: branchId, type: "rect",
       x: bx - branchW / 2, y: by - bh / 2,
       w: branchW, h: bh,
       label: branchData[i].label, fill, stroke,
@@ -221,77 +264,6 @@ function buildMindMap(result: SummaryResult, w: number, h: number): Shape[] {
 
   return shapes;
 }
-
-// ── Doodle image via Gemini image generation ──────────────────────────────────
-
-const GEMINI_IMG_URL =
-  "https://generativelanguage.googleapis.com/v1beta/models/gemini-2.5-flash-image:generateContent";
-
-async function fetchDoodleImage(result: SummaryResult, apiKey: string): Promise<string | null> {
-  const allPoints = result.keyPoints
-    .map((kp, i) => `${i + 1}. ${stripMd(kp)}`)
-    .join("\n");
-
-  const prompt = [
-    `Create a rich, detailed hand-drawn whiteboard sketchnote infographic that captures the COMPLETE idea of this topic.`,
-    ``,
-    `TOPIC: ${stripMd(result.tldr)}`,
-    ``,
-    `ALL KEY POINTS (include every one):`,
-    allPoints,
-    ``,
-    `TAKEAWAY: ${stripMd(result.takeaway)}`,
-    ``,
-    `Instructions:`,
-    `- Illustrate ALL the key points above — do not skip or summarize any`,
-    `- Use a whiteboard/notebook sketchnote style: white or light-gray background, hand-drawn ink lines`,
-    `- Organize concepts spatially to show relationships, flow, and hierarchy`,
-    `- Use pastel color fills, connecting arrows with short verb labels, small doodle icons`,
-    `- Add the takeaway message prominently at the bottom`,
-    `- Make it dense and information-rich, like a teacher's whiteboard after a full lecture`,
-    `- No photographs, no realistic art — hand-drawn sketch style only`,
-  ].join("\n");
-
-  try {
-    logger.info("whiteboard", "Doodle image: calling Gemini image generation…");
-    const res = await fetch(`${GEMINI_IMG_URL}?key=${apiKey}`, {
-      method: "POST",
-      headers: { "Content-Type": "application/json" },
-      body: JSON.stringify({
-        contents: [{ parts: [{ text: prompt }] }],
-        generationConfig: { responseModalities: ["IMAGE"] },
-      }),
-    });
-
-    if (!res.ok) {
-      const errText = await res.text();
-      logger.error("whiteboard", `Doodle image API error ${res.status}: ${errText.slice(0, 300)}`);
-      return null;
-    }
-
-    const data = await res.json();
-    logger.info("whiteboard", `Doodle image response keys: ${Object.keys(data).join(", ")}`);
-
-    const parts: any[] = data.candidates?.[0]?.content?.parts ?? [];
-    logger.info("whiteboard", `Doodle image parts count: ${parts.length}, types: ${parts.map((p: any) => p.inlineData ? "image" : "text").join(", ")}`);
-
-    for (const part of parts) {
-      if (part.inlineData?.mimeType?.startsWith("image/")) {
-        const dataUrl = `data:${part.inlineData.mimeType};base64,${part.inlineData.data}`;
-        logger.info("whiteboard", `Doodle image received, mime: ${part.inlineData.mimeType}, size: ${part.inlineData.data.length} chars`);
-        return dataUrl;
-      }
-    }
-
-    logger.error("whiteboard", `Doodle image: no image part found. Parts: ${JSON.stringify(parts).slice(0, 300)}`);
-    return null;
-  } catch (err) {
-    logger.error("whiteboard", `Doodle image fetch error: ${err}`);
-    return null;
-  }
-}
-
-// ── Render a single shape with Rough.js ──────────────────────────────────────
 
 function renderShape(
   rc: ReturnType<typeof rough.svg>,
@@ -362,6 +334,19 @@ function renderShape(
       r.setAttribute("rx",             "3");
       r.setAttribute("pointer-events", "none");
       gEl.appendChild(r);
+
+      // Resize handle at bottom-right corner of selected boxes.
+      const h = document.createElementNS("http://www.w3.org/2000/svg", "rect");
+      h.setAttribute("x", String(shape.x + shape.w - 6));
+      h.setAttribute("y", String(shape.y + shape.h - 6));
+      h.setAttribute("width", "12");
+      h.setAttribute("height", "12");
+      h.setAttribute("fill", "#60a5fa");
+      h.setAttribute("stroke", "#fff");
+      h.setAttribute("stroke-width", "1");
+      h.setAttribute("rx", "2");
+      h.setAttribute("pointer-events", "none");
+      gEl.appendChild(h);
     }
 
     if (!skipText && shape.label) {
@@ -549,8 +534,6 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
   const [editingId,  setEditingId]  = useState<string | null>(null);
   const [editText,   setEditText]   = useState("");
   const [preview,    setPreview]    = useState<Shape | null>(null);
-  const [illustStatus, setIllustStatus] = useState<"idle" | "loading" | "done" | "error">("idle");
-  const [doodleImg,    setDoodleImg]    = useState<string | null>(null);
 
   const svgRef     = useRef<SVGSVGElement>(null);
   const shapesGRef = useRef<SVGGElement>(null);
@@ -583,12 +566,10 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
     logger.info("whiteboard", `init at ${canvasW} × ${canvasH} — resultProp: ${!!resultProp}`);
 
     const doInit = (result: SummaryResult) => {
-      const s = buildMindMap(result, canvasW, canvasH);
+      const s = relinkSegments(buildMindMap(result, canvasW, canvasH));
       logger.info("whiteboard", `built ${s.length} shapes from ${resultProp ? "prop" : "storage"}`);
       setShapes(s);
       setUndoStack([[]]);
-      // Auto-generate illustration
-      loadIllustration(result, canvasW, canvasH, s);
     };
 
     if (resultProp) {
@@ -600,32 +581,6 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
       });
     }
   }, [canvasW, canvasH, resultProp]);
-
-  // ── Load doodle image from Gemini image generation ────────────────────────
-  function loadIllustration(result: SummaryResult, _w: number, _h: number, _baseShapes: Shape[]) {
-    logger.info("whiteboard", "Doodle image: starting…");
-    setIllustStatus("loading");
-
-    chrome.storage.sync.get("geminiApiKey", async (items) => {
-      const geminiApiKey = items.geminiApiKey as string | undefined;
-      logger.info("whiteboard", `Doodle image: apiKey present: ${!!geminiApiKey}`);
-
-      if (!geminiApiKey) {
-        logger.error("whiteboard", "Doodle image: no API key in chrome.storage.sync");
-        setIllustStatus("error");
-        return;
-      }
-
-      const dataUrl = await fetchDoodleImage(result, geminiApiKey);
-      if (dataUrl) {
-        setDoodleImg(dataUrl);
-        setIllustStatus("done");
-        logger.info("whiteboard", "Doodle image: rendered successfully");
-      } else {
-        setIllustStatus("error");
-      }
-    });
-  }
 
   // ── Rough.js render ───────────────────────────────────────────────────────
   useEffect(() => {
@@ -745,11 +700,33 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
     return null;
   }
 
+  function hitResizeHandle(x: number, y: number): string | null {
+    if (!selectedId) return null;
+    const s = shapes.find(it => it.id === selectedId);
+    if (!s || s.type !== "rect") return null;
+    const hx = s.x + s.w;
+    const hy = s.y + s.h;
+    return Math.hypot(x - hx, y - hy) <= 11 ? s.id : null;
+  }
+
+  function rectAt(x: number, y: number): RectShape | null {
+    for (let i = shapes.length - 1; i >= 0; i--) {
+      const s = shapes[i];
+      if (s.type !== "rect") continue;
+      if (x >= s.x && x <= s.x + s.w && y >= s.y && y <= s.y + s.h) return s;
+    }
+    return null;
+  }
+
   // ── Delete selected ───────────────────────────────────────────────────────
   const deleteSelected = useCallback(() => {
     setSelectedId(prev => {
       if (!prev) return null;
-      const next = shapesRef.current.filter(s => s.id !== prev);
+      const next = shapesRef.current.filter(s => {
+        if (s.id === prev) return false;
+        if ((s.type === "line" || s.type === "arrow") && (s.fromId === prev || s.toId === prev)) return false;
+        return true;
+      });
       commit(next);
       return null;
     });
@@ -769,6 +746,17 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
     const { x, y } = svgXY(e);
 
     if (tool === "select") {
+      const resizeHit = hitResizeHandle(x, y);
+      if (resizeHit) {
+        const rect = shapes.find(s => s.id === resizeHit && s.type === "rect") as RectShape | undefined;
+        if (rect) {
+          setSelectedId(resizeHit);
+          preDragRef.current = [...shapesRef.current];
+          drag.current = { kind: "resize-rect", id: resizeHit, x0: x, y0: y, origW: rect.w, origH: rect.h };
+          return;
+        }
+      }
+
       const hit = hitTest(x, y);
       setSelectedId(hit);
       if (hit) {
@@ -777,6 +765,7 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
         if (shape.type === "rect" || shape.type === "text") {
           drag.current = { kind: "move-xy", id: hit, x0: x, y0: y, origX: shape.x, origY: shape.y };
         } else {
+          if ((shape as SegShape).fromId && (shape as SegShape).toId) return;
           drag.current = { kind: "move-seg", id: hit, x0: x, y0: y,
             origX1: (shape as SegShape).x1, origY1: (shape as SegShape).y1,
             origX2: (shape as SegShape).x2, origY2: (shape as SegShape).y2 };
@@ -841,7 +830,15 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
         if (s.type === "rect" || s.type === "text") return { ...s, x: origX + dx, y: origY + dy };
         return s;
       });
-      setShapes(next);
+      setShapes(relinkSegments(next));
+    } else if (d.kind === "resize-rect") {
+      const dx = x - d.x0, dy = y - d.y0;
+      const { id: did, origW, origH } = d;
+      const next = shapes.map(s => {
+        if (s.id !== did || s.type !== "rect") return s;
+        return { ...s, w: Math.max(80, origW + dx), h: Math.max(48, origH + dy) };
+      });
+      setShapes(relinkSegments(next));
     } else if (d.kind === "move-seg") {
       const dx = x - d.x0, dy = y - d.y0;
       const { id: did, origX1, origY1, origX2, origY2 } = d;
@@ -876,13 +873,20 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
       }
     } else if (d.kind === "draw-line" || d.kind === "draw-arrow") {
       if (Math.hypot(x - d.x0, y - d.y0) > 12) {
-        const s: SegShape = { id: uid(),
+        const fromRect = rectAt(d.x0, d.y0);
+        const toRect   = rectAt(x, y);
+        let s: SegShape = { id: uid(),
           type: d.kind === "draw-arrow" ? "arrow" : "line",
           x1: d.x0, y1: d.y0, x2: x, y2: y, color: penColor };
-        commit([...shapesRef.current, s]);
+        if (fromRect && toRect && fromRect.id !== toRect.id) {
+          const fromSide: "left" | "right" = toRect.x >= fromRect.x ? "right" : "left";
+          const toSide: "left" | "right"   = fromSide === "right" ? "left" : "right";
+          s = { ...s, fromId: fromRect.id, toId: toRect.id, fromSide, toSide };
+        }
+        commit(relinkSegments([...shapesRef.current, s]));
         setSelectedId(s.id);
       }
-    } else if (d.kind === "move-xy" || d.kind === "move-seg") {
+    } else if (d.kind === "move-xy" || d.kind === "resize-rect" || d.kind === "move-seg") {
       // Commit the moved position; push pre-drag snapshot to undo
       if (preDragRef.current) {
         setUndoStack(u => [...u.slice(-50), preDragRef.current!]);
@@ -996,11 +1000,6 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
         </div>
       </div>
 
-      {/* Status bar for illustration */}
-      {illustStatus === "loading" && (
-        <div className="wb__status">✨ Generating topic illustration…</div>
-      )}
-
       {/* Canvas */}
       <div className="wb__wrap" ref={wrapRef}>
         {canvasW > 0 && canvasH > 0 && (
@@ -1028,35 +1027,6 @@ export function Whiteboard({ result: resultProp, onClose }: WhiteboardProps = {}
             <rect x="-9999" y="-9999" width="29998" height="29998" fill="#f8fafc" />
             <rect x="-9999" y="-9999" width="29998" height="29998" fill="url(#dots)"
               style={{ pointerEvents: "none" }} />
-
-            {/* Divider + doodle image section */}
-            {illustStatus !== "idle" && (
-              <>
-                <line
-                  x1={0} y1={canvasH * 0.58} x2={canvasW} y2={canvasH * 0.58}
-                  stroke="#e2e8f0" strokeWidth="1.5" strokeDasharray="8 4"
-                  style={{ pointerEvents: "none" }}
-                />
-                <text x={16} y={canvasH * 0.58 + 18}
-                  fill="#94a3b8" fontSize={11}
-                  fontFamily="-apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif"
-                  style={{ pointerEvents: "none" }}
-                >✨ AI Doodle</text>
-              </>
-            )}
-
-            {/* Doodle image rendered in the lower 40% of the canvas */}
-            {doodleImg && (
-              <image
-                href={doodleImg}
-                x={20}
-                y={canvasH * 0.59 + 20}
-                width={canvasW - 40}
-                height={canvasH * 0.40 - 30}
-                preserveAspectRatio="xMidYMid meet"
-                style={{ pointerEvents: "none" }}
-              />
-            )}
 
             <g ref={shapesGRef} />
 

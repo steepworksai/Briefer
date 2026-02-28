@@ -3,24 +3,25 @@ const GEMINI_URL =
 
 // ─── Single unified prompt ────────────────────────────────────────────────────
 const SUMMARY_PROMPT = (text: string) => `
-Summarize the following content clearly and usefully.
+Summarize the following content comprehensively, extracting the maximum number of distinct key ideas.
 
 TLDR: <2-3 plain English sentences — the core point>
 
 KEY POINTS:
-- <what it is or does>
-- <how it works or why it matters>
-- <what makes it useful or important>
+- <extract EVERY distinct idea, concept, mechanism, finding, or insight — aim for 8-12 points>
+- <cover technical details, causes, effects, comparisons, and outcomes>
+- <do not merge separate ideas — give each its own bullet>
+- <be specific and concrete for each point>
 
 TAKEAWAY: <one sentence — the single most memorable or actionable insight>
 
 Rules:
-- Max 200 words total.
+- Extract as many KEY POINTS as needed — do NOT limit to 3 or 5, capture every important idea.
 - Be concrete and specific, not vague.
 - Write like you're explaining to a smart friend.
 - Skip marketing language and filler.
-- If the content is technical, briefly explain the mechanism in Key Points.
-- Only include a point if it actually adds something.
+- If the content is technical, explain the mechanism in Key Points.
+- Only include a point if it actually adds something new.
 
 Content:
 ${text}
@@ -28,19 +29,19 @@ ${text}
 
 // ─── Video prompt (no Content: section — video is passed as fileData) ─────────
 const VIDEO_PROMPT = `
-Summarize this video clearly and usefully.
+Summarize this video comprehensively, extracting the maximum number of distinct key ideas.
 
 TLDR: <2-3 plain English sentences — the core point>
 
 KEY POINTS:
-- <what it covers or demonstrates>
-- <how it works or why it matters>
-- <the most useful or important thing shown>
+- <extract EVERY distinct idea, concept, demonstration, or insight — aim for 8-12 points>
+- <cover what is shown, how it works, why it matters, key comparisons and outcomes>
+- <do not merge separate ideas — give each its own bullet>
 
 TAKEAWAY: <one sentence — the single most memorable or actionable insight>
 
 Rules:
-- Max 200 words total.
+- Extract as many KEY POINTS as needed — do NOT limit to 3 or 5.
 - Be concrete and specific, not vague.
 - Write like you're explaining to a smart friend.
 - Skip filler and restatements.
@@ -60,7 +61,7 @@ export async function summarize(text: string, apiKey: string): Promise<SummaryRe
     headers: { "Content-Type": "application/json" },
     body: JSON.stringify({
       contents: [{ parts: [{ text: SUMMARY_PROMPT(text) }] }],
-      generationConfig: { temperature: 0.3, maxOutputTokens: 4096 },
+      generationConfig: { temperature: 0.3, maxOutputTokens: 8192 },
     }),
   });
 
@@ -98,28 +99,6 @@ export async function summarizeVideo(videoUrl: string, apiKey: string): Promise<
   const data = await response.json();
   const raw: string = data?.candidates?.[0]?.content?.parts?.[0]?.text ?? "";
   return parse(raw);
-}
-
-// ─── Follow-up Q&A ───────────────────────────────────────────────────────────
-export async function followUp(question: string, context: string, apiKey: string): Promise<string> {
-  const prompt = `Based on this content summary:\n${context}\n\nAnswer this question concisely and helpfully:\n${question}`;
-
-  const response = await fetch(`${GEMINI_URL}?key=${apiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({
-      contents: [{ parts: [{ text: prompt }] }],
-      generationConfig: { temperature: 0.5, maxOutputTokens: 512 },
-    }),
-  });
-
-  if (!response.ok) {
-    const err = await response.json().catch(() => ({}));
-    throw new Error((err as any)?.error?.message ?? `Gemini API error: ${response.status}`);
-  }
-
-  const data = await response.json();
-  return data?.candidates?.[0]?.content?.parts?.[0]?.text?.trim() ?? "";
 }
 
 // ─── Parser ───────────────────────────────────────────────────────────────────

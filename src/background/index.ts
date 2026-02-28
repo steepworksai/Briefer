@@ -1,4 +1,4 @@
-import { summarize, summarizeVideo, followUp } from "../lib/api";
+import { summarize, summarizeVideo } from "../lib/api";
 import { logger } from "../lib/logger";
 
 // Open side panel when extension icon is clicked
@@ -7,6 +7,27 @@ chrome.sidePanel
   .catch(() => {});
 
 chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
+  if (message.type === "OPEN_PREVIEW") {
+    chrome.windows.create({
+      url: chrome.runtime.getURL("src/preview/index.html"),
+      type: "popup",
+      state: "maximized",
+    }).then(() => sendResponse({ success: true }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
+  if (message.type === "OPEN_WHITEBOARD") {
+    const { width, height, left, top } = message.payload;
+    chrome.windows.create({
+      url: chrome.runtime.getURL("src/whiteboard/index.html"),
+      type: "popup",
+      width, height, left, top,
+    }).then(() => sendResponse({ success: true }))
+      .catch(err => sendResponse({ success: false, error: err.message }));
+    return true;
+  }
+
   if (message.type === "SUMMARIZE") {
     const { text, apiKey } = message.payload;
     logger.info("background", `Summarize request — ${text.split(/\s+/).length} words`);
@@ -20,14 +41,6 @@ chrome.runtime.onMessage.addListener((message, _sender, sendResponse) => {
         logger.error("background", `Summarize failed: ${msg}`);
         sendResponse({ success: false, error: msg });
       });
-    return true;
-  }
-
-  if (message.type === "FOLLOW_UP") {
-    const { question, context, apiKey } = message.payload;
-    followUp(question, context, apiKey)
-      .then((answer) => sendResponse({ success: true, answer }))
-      .catch((err) => sendResponse({ success: false, error: err.message ?? "Unknown error" }));
     return true;
   }
 

@@ -1,73 +1,118 @@
-# React + TypeScript + Vite
+# Briefer — AI Page Summarizer
 
-This template provides a minimal setup to get React working in Vite with HMR and some ESLint rules.
+> Instant AI summaries of any article, blog post, or YouTube video — structured, readable, and saved to your personal knowledge base.
 
-Currently, two official plugins are available:
+[![License: MIT](https://img.shields.io/badge/License-MIT-6366f1.svg)](LICENSE)
+[![Manifest V3](https://img.shields.io/badge/Manifest-V3-green)](https://developer.chrome.com/docs/extensions/mv3/intro/)
 
-- [@vitejs/plugin-react](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react) uses [Babel](https://babeljs.io/) (or [oxc](https://oxc.rs) when used in [rolldown-vite](https://vite.dev/guide/rolldown)) for Fast Refresh
-- [@vitejs/plugin-react-swc](https://github.com/vitejs/vite-plugin-react/blob/main/packages/plugin-react-swc) uses [SWC](https://swc.rs/) for Fast Refresh
+---
 
-## React Compiler
+## What it does
 
-The React Compiler is not enabled on this template because of its impact on dev & build performances. To add it, see [this documentation](https://react.dev/learn/react-compiler/installation).
+Briefer reads the current page or YouTube video and generates a structured summary using Google Gemini AI — no copy-pasting, no tab-switching.
 
-## Expanding the ESLint configuration
+- **Quick Read** — TLDR, key points, and takeaway in seconds
+- **Deep Dive** — core argument, solution mechanism, structural shift, and why it matters
+- **YouTube & video support** — summarizes transcripts from YouTube and DeepLearning.AI
+- **AI Doodle** — generates a sketchnote-style visual summary of the page
+- **Doodle Mind Map** — interactive hand-drawn mind map built from key points
+- **History** — every summary saved automatically, grouped by topic
+- **Read aloud** — built-in voice player to listen to your summary
 
-If you are developing a production application, we recommend updating the configuration to enable type-aware lint rules:
+---
 
-```js
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
+## Privacy
 
-      // Remove tseslint.configs.recommended and replace with this
-      tseslint.configs.recommendedTypeChecked,
-      // Alternatively, use this for stricter rules
-      tseslint.configs.strictTypeChecked,
-      // Optionally, add this for stylistic rules
-      tseslint.configs.stylisticTypeChecked,
+| What happens | Detail |
+|---|---|
+| Page content | Extracted locally inside your browser tab via Chrome scripting |
+| AI calls | Text sent **directly** from your browser to Google Gemini |
+| API key | Stored in Chrome's encrypted `chrome.storage.sync` — never sent to Briefer |
+| Analytics | None. No backend server exists. |
 
-      // Other configs...
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+See the full [Privacy Policy](https://steepworksai.github.io/Briefer/privacy.html).
+
+---
+
+## Bring Your Own Key (BYOK)
+
+Briefer uses your own Google Gemini API key — no Briefer subscription or monthly fee.
+
+| Provider | Model |
+|---|---|
+| Google | `gemini-2.5-flash` |
+
+Get a free API key at [aistudio.google.com](https://aistudio.google.com/app/apikey).
+
+---
+
+## Getting started
+
+### Run locally from source
+
+```bash
+git clone https://github.com/steepworksai/Briefer.git
+cd Briefer
+npm install
+npm run build
 ```
 
-You can also install [eslint-plugin-react-x](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-x) and [eslint-plugin-react-dom](https://github.com/Rel1cx/eslint-react/tree/main/packages/plugins/eslint-plugin-react-dom) for React-specific lint rules:
+Then load the unpacked extension:
 
-```js
-// eslint.config.js
-import reactX from 'eslint-plugin-react-x'
-import reactDom from 'eslint-plugin-react-dom'
+**Chrome:** Go to `chrome://extensions` → Enable **Developer mode** → **Load unpacked** → select `dist/`
 
-export default defineConfig([
-  globalIgnores(['dist']),
-  {
-    files: ['**/*.{ts,tsx}'],
-    extends: [
-      // Other configs...
-      // Enable lint rules for React
-      reactX.configs['recommended-typescript'],
-      // Enable lint rules for React DOM
-      reactDom.configs.recommended,
-    ],
-    languageOptions: {
-      parserOptions: {
-        project: ['./tsconfig.node.json', './tsconfig.app.json'],
-        tsconfigRootDir: import.meta.dirname,
-      },
-      // other options...
-    },
-  },
-])
+---
+
+## Tech stack
+
+| Layer | Technology |
+|---|---|
+| Language | TypeScript |
+| Platform | Chrome Extension — Manifest V3 |
+| Build | Vite + `@crxjs/vite-plugin` |
+| UI | React |
+| AI | Google Gemini 2.5 Flash (REST) |
+| Mind map | Rough.js |
+| Storage | `chrome.storage.sync` / `chrome.storage.local` |
+
+---
+
+## Development
+
+```bash
+npm install      # install dependencies
+npm run build    # production build → dist/
 ```
+
+### Project structure
+
+```
+src/
+├── background/      # Service worker — AI calls, window management
+├── content/         # Content script (placeholder)
+├── panel/           # Side panel UI — summary, history, tour
+├── whiteboard/      # Doodle canvas
+├── preview/         # Doodle preview popup
+└── lib/
+    ├── api.ts       # Gemini API — summarize, summarizeVideo
+    ├── history.ts   # Summary persistence — save, load, group by topic
+    ├── doodle.ts    # AI doodle generation
+    └── transcripts.ts  # YouTube & DeepLearning.AI transcript extraction
+```
+
+---
+
+## Contributing
+
+Issues and pull requests are welcome. Please open an issue first to discuss significant changes.
+
+1. Fork the repo
+2. Create a branch: `git checkout -b feat/my-feature`
+3. Make your changes
+4. Open a pull request
+
+---
+
+## License
+
+[MIT](LICENSE) © 2026 SteepWorksAi

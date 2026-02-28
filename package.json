@@ -1,7 +1,10 @@
 {
-  "name": "screenreader",
+  "name": "briefer",
+  "version": "1.0.0",
+  "description": "Instantly summarize articles, YouTube videos, Coursera & DeepLearning.AI courses — TLDR, key points, AI sketchnote.",
+  "author": "SteepWorksAi",
+  "license": "MIT",
   "private": true,
-  "version": "0.0.0",
   "type": "module",
   "scripts": {
     "dev": "vite",

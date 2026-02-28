@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Briefer — Privacy Policy</title>
+  <link rel="icon" type="image/png" sizes="128x128" href="icon128.png">
+  <style>
+    body { font-family: system-ui, -apple-system, sans-serif; max-width: 720px; margin: 48px auto; padding: 0 24px; color: #111827; line-height: 1.7; }
+    h1 { font-size: 28px; font-weight: 800; color: #1f2937; }
+    h2 { font-size: 18px; font-weight: 700; margin-top: 32px; color: #374151; }
+    p, li { font-size: 15px; color: #4b5563; }
+    ul { padding-left: 20px; }
+    a { color: #6366f1; }
+    .updated { font-size: 13px; color: #9ca3af; margin-top: -8px; }
+    footer { margin-top: 48px; font-size: 13px; color: #9ca3af; border-top: 1px solid #e5e7eb; padding-top: 16px; }
+  </style>
+</head>
+<body>
+  <h1>Briefer — Privacy Policy</h1>
+  <p class="updated">Last updated: February 2026</p>
+
+  <h2>1. Overview</h2>
+  <p>Briefer is a Chrome Extension that generates AI summaries of web pages and YouTube videos. Briefer has no backend server. No data is ever sent to Briefer or collected by Briefer.</p>
+
+  <h2>2. Page Content</h2>
+  <p>When you trigger a summary, Briefer reads the text content of the current page <strong>locally inside your browser tab</strong> using Chrome's scripting API. This content is sent directly from your browser to Google Gemini to generate the summary. It is never routed through or stored by Briefer.</p>
+
+  <h2>3. YouTube &amp; Video Transcripts</h2>
+  <p>For YouTube videos and DeepLearning.AI courses, Briefer fetches the publicly available transcript directly from within your browser tab and sends it to Google Gemini. No video data is uploaded to Briefer.</p>
+
+  <h2>4. AI Provider API Calls</h2>
+  <p>All AI calls are made <strong>directly from your browser</strong> to Google Gemini. Briefer does not proxy or intercept these calls. Your data is governed by Google's privacy policy:</p>
+  <ul>
+    <li><a href="https://policies.google.com/privacy" target="_blank">Google Privacy Policy</a></li>
+  </ul>
+
+  <h2>5. API Key</h2>
+  <p>Your Gemini API key is stored locally in Chrome's encrypted extension storage (<code>chrome.storage.sync</code>). It is never sent to Briefer or any third party other than Google Gemini.</p>
+
+  <h2>6. Summaries &amp; History</h2>
+  <p>Generated summaries are saved locally in <code>chrome.storage.local</code> on your own device. This data never leaves your browser and is not accessible to Briefer or any third party.</p>
+
+  <h2>7. Permissions</h2>
+  <ul>
+    <li><strong>storage</strong> — stores your API key, settings, and saved summaries locally in Chrome</li>
+    <li><strong>activeTab / scripting</strong> — reads the text content of the page you are viewing to generate a summary</li>
+    <li><strong>sidePanel</strong> — shows the Briefer interface alongside the page</li>
+    <li><strong>tabs</strong> — identifies the current tab's URL and title for summary context</li>
+    <li><strong>windows</strong> — opens the doodle board and preview in a separate popup window</li>
+  </ul>
+
+  <h2>8. No Tracking, Analytics, or Advertising</h2>
+  <p>Briefer does not use any analytics SDK, crash reporter, advertising network, or telemetry of any kind.</p>
+
+  <h2>9. Children's Privacy</h2>
+  <p>Briefer is not directed at children under 13 and does not knowingly collect any information from children.</p>
+
+  <h2>10. Changes to This Policy</h2>
+  <p>If this policy changes materially, the updated date at the top of this page will be updated. Continued use of the extension after changes constitutes acceptance of the revised policy.</p>
+
+  <h2>11. Contact</h2>
+  <p>For privacy questions, open an issue at <a href="https://github.com/steepworksai/Briefer/issues" target="_blank">github.com/steepworksai/Briefer/issues</a>.</p>
+
+  <footer>
+    © 2026 SteepWorksAi · Briefer is open-source software. <a href="https://github.com/steepworksai/Briefer" target="_blank">View on GitHub</a>
+  </footer>
+</body>
+</html>

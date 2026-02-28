@@ -1,0 +1,170 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Briefer — AI Page Summarizer</title>
+  <link rel="icon" type="image/png" sizes="128x128" href="icon128.png">
+  <link rel="shortcut icon" href="icon128.png">
+  <style>
+    * { box-sizing: border-box; margin: 0; padding: 0; }
+    body { font-family: system-ui, -apple-system, sans-serif; background: #f9fafb; color: #111827; }
+    .hero { max-width: 720px; margin: 0 auto; padding: 80px 24px 60px; text-align: center; }
+    .logo-wrap { display: flex; align-items: center; justify-content: center; gap: 14px; margin-bottom: 24px; }
+    .logo-wrap img { width: 64px; height: 64px; border-radius: 16px; box-shadow: 0 4px 16px rgba(99,102,241,0.25); }
+    .logo-wrap span { font-size: 28px; font-weight: 900; color: #1f2937; letter-spacing: -0.5px; }
+    .badge { display: inline-block; background: #ede9fe; color: #6366f1; border: 1px solid #c4b5fd; border-radius: 99px; padding: 4px 14px; font-size: 13px; font-weight: 700; margin-bottom: 20px; }
+    h1 { font-size: 42px; font-weight: 900; color: #1f2937; line-height: 1.15; margin-bottom: 16px; }
+    .sub { font-size: 18px; color: #6b7280; line-height: 1.6; max-width: 540px; margin: 0 auto 36px; }
+    .cta-group { display: flex; flex-wrap: wrap; gap: 12px; justify-content: center; }
+    .cta { display: inline-flex; align-items: center; gap: 8px; padding: 14px 28px; background: linear-gradient(135deg, #6366f1, #8b5cf6); color: #fff; border-radius: 12px; font-weight: 700; font-size: 16px; text-decoration: none; box-shadow: 0 4px 18px rgba(99,102,241,0.35); }
+    .cta-gh { background: linear-gradient(135deg, #1f2937, #374151); box-shadow: 0 4px 18px rgba(0,0,0,0.2); }
+    .how { max-width: 720px; margin: 60px auto 0; padding: 0 24px; text-align: center; }
+    .how h2 { font-size: 26px; font-weight: 800; color: #1f2937; margin-bottom: 32px; }
+    .steps { display: grid; grid-template-columns: repeat(auto-fit, minmax(180px, 1fr)); gap: 16px; margin-bottom: 60px; }
+    .step { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 24px 20px; text-align: left; }
+    .step-num { font-size: 12px; font-weight: 700; color: #6366f1; letter-spacing: 0.05em; text-transform: uppercase; margin-bottom: 8px; }
+    .step h3 { font-size: 15px; font-weight: 700; color: #1f2937; margin-bottom: 6px; }
+    .step p { font-size: 13px; color: #6b7280; line-height: 1.55; }
+    .features { max-width: 720px; margin: 0 auto 60px; padding: 0 24px; }
+    .features h2 { font-size: 26px; font-weight: 800; color: #1f2937; margin-bottom: 32px; text-align: center; }
+    .grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 20px; }
+    .feature { background: #fff; border: 1px solid #e5e7eb; border-radius: 12px; padding: 20px; }
+    .feature h3 { font-size: 15px; font-weight: 700; margin-bottom: 6px; color: #1f2937; }
+    .feature p { font-size: 13px; color: #6b7280; line-height: 1.55; }
+    .icon { font-size: 24px; margin-bottom: 10px; }
+    .privacy { max-width: 720px; margin: 0 auto 60px; padding: 0 24px; }
+    .privacy h2 { font-size: 26px; font-weight: 800; color: #1f2937; margin-bottom: 20px; text-align: center; }
+    .privacy-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 12px; overflow: hidden; border: 1px solid #e5e7eb; }
+    .privacy-table th { background: #f9fafb; padding: 12px 16px; text-align: left; font-size: 13px; font-weight: 700; color: #374151; border-bottom: 1px solid #e5e7eb; }
+    .privacy-table td { padding: 12px 16px; font-size: 13px; color: #4b5563; border-bottom: 1px solid #f3f4f6; }
+    .privacy-table tr:last-child td { border-bottom: none; }
+    footer { text-align: center; padding: 32px 24px; font-size: 13px; color: #9ca3af; border-top: 1px solid #e5e7eb; }
+    footer a { color: #6366f1; text-decoration: none; }
+  </style>
+</head>
+<body>
+
+  <div class="hero">
+    <div class="logo-wrap">
+      <img src="icon128.png" alt="Briefer logo" />
+      <span>Briefer</span>
+    </div>
+    <div class="badge">Chrome Extension · Free · Open Source · Powered by Gemini AI</div>
+    <h1>Understand any page<br>in seconds</h1>
+    <p class="sub">Briefer reads any article, blog post, or YouTube video and generates a structured AI summary — TLDR, key points, and takeaway — instantly in your browser's side panel.</p>
+    <div class="cta-group">
+      <a class="cta" href="https://github.com/steepworksai/Briefer" target="_blank">
+        ➕ Get Briefer — It's Free
+      </a>
+      <a class="cta cta-gh" href="https://github.com/steepworksai/Briefer" target="_blank">
+        ⭐ Star on GitHub
+      </a>
+    </div>
+  </div>
+
+  <div class="how">
+    <h2>How it works</h2>
+    <div class="steps">
+      <div class="step">
+        <div class="step-num">Step 1</div>
+        <h3>Add your Gemini key</h3>
+        <p>Paste your free Google Gemini API key once. Stored locally in Chrome — never sent anywhere.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 2</div>
+        <h3>Open any page</h3>
+        <p>Navigate to an article, blog post, research paper, or YouTube video.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 3</div>
+        <h3>Click the Briefer icon</h3>
+        <p>The side panel opens and your summary appears in seconds — no copy-pasting required.</p>
+      </div>
+      <div class="step">
+        <div class="step-num">Step 4</div>
+        <h3>Browse your history</h3>
+        <p>Every summary is saved automatically and grouped by topic — your personal knowledge base.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="features">
+    <h2>Features</h2>
+    <div class="grid">
+      <div class="feature">
+        <div class="icon">⚡</div>
+        <h3>Instant summaries</h3>
+        <p>TLDR, key points, and takeaway generated in seconds from any article or video.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">📺</div>
+        <h3>YouTube support</h3>
+        <p>Summarizes YouTube videos and DeepLearning.AI courses directly from their transcripts.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🔵</div>
+        <h3>Deep Dive mode</h3>
+        <p>Goes beyond a summary — breaks down the core argument, solution mechanism, and why it matters.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🎨</div>
+        <h3>AI Doodle</h3>
+        <p>Generates a sketchnote-style visual summary to help content stick in memory.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">📚</div>
+        <h3>History &amp; topics</h3>
+        <p>Every summary saved automatically and grouped by topic — revisit anything, anytime.</p>
+      </div>
+      <div class="feature">
+        <div class="icon">🔑</div>
+        <h3>Bring your own key</h3>
+        <p>Uses your Google Gemini API key directly. No Briefer subscription or monthly fee.</p>
+      </div>
+    </div>
+  </div>
+
+  <div class="privacy">
+    <h2>Privacy first</h2>
+    <table class="privacy-table">
+      <thead>
+        <tr>
+          <th>What happens</th>
+          <th>Detail</th>
+        </tr>
+      </thead>
+      <tbody>
+        <tr>
+          <td>Page content</td>
+          <td>Extracted locally inside your browser tab — never uploaded to Briefer</td>
+        </tr>
+        <tr>
+          <td>AI calls</td>
+          <td>Text sent <strong>directly</strong> from your browser to Google Gemini</td>
+        </tr>
+        <tr>
+          <td>API key</td>
+          <td>Stored in Chrome's encrypted <code>chrome.storage.sync</code> — never sent to Briefer</td>
+        </tr>
+        <tr>
+          <td>Summaries</td>
+          <td>Saved locally in <code>chrome.storage.local</code> on your device only</td>
+        </tr>
+        <tr>
+          <td>Analytics</td>
+          <td>None. No backend server exists.</td>
+        </tr>
+      </tbody>
+    </table>
+  </div>
+
+  <footer>
+    © 2026 SteepWorksAi ·
+    <a href="https://github.com/steepworksai/Briefer" target="_blank">GitHub</a> ·
+    <a href="privacy.html">Privacy Policy</a> ·
+    <a href="https://github.com/steepworksai/Briefer/issues" target="_blank">Support</a>
+  </footer>
+
+</body>
+</html>

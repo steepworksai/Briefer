@@ -16,14 +16,15 @@ export function DoodleMindMap({ result }: Props) {
     chrome.storage.local.set({ whiteboardData: result }, () => {
       const w = Math.round(screen.width  * 0.70);
       const h = Math.round(screen.height * 0.82);
-      chrome.windows.create(
+      chrome.runtime.sendMessage(
         {
-          url: chrome.runtime.getURL("src/whiteboard/index.html"),
-          type: "popup",
-          width:  w,
-          height: h,
-          left: Math.round((screen.width  - w) / 2),
-          top:  Math.round((screen.height - h) / 2),
+          type: "OPEN_WHITEBOARD",
+          payload: {
+            width:  w,
+            height: h,
+            left: Math.round((screen.width  - w) / 2),
+            top:  Math.round((screen.height - h) / 2),
+          },
         },
         () => setOpening(false),
       );
@@ -32,7 +33,7 @@ export function DoodleMindMap({ result }: Props) {
 
   return (
     <button
-      className={`doodle-btn${opening ? " doodle-btn--loading" : ""}`}
+      className={`doodle-btn section-btn--text${opening ? " doodle-btn--loading" : ""}`}
       onClick={openBoard}
       disabled={opening}
       title="Open Doodle Mind Map"

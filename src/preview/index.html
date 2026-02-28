@@ -1,0 +1,47 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Briefer — Doodle Preview</title>
+    <style>
+      * { margin: 0; padding: 0; box-sizing: border-box; }
+      html, body {
+        width: 100%; height: 100%;
+        background: #060a12;
+        overflow: hidden;
+      }
+      body {
+        display: flex;
+        align-items: center;
+        justify-content: center;
+      }
+      #img {
+        max-width: 98vw;
+        max-height: 98vh;
+        object-fit: contain;
+      }
+      #close {
+        position: fixed;
+        top: 14px; right: 14px;
+        width: 32px; height: 32px;
+        border-radius: 50%;
+        border: none;
+        background: rgba(255,255,255,0.15);
+        color: #fff;
+        font-size: 16px;
+        cursor: pointer;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        transition: background 0.15s;
+      }
+      #close:hover { background: rgba(255,255,255,0.28); }
+    </style>
+  </head>
+  <body>
+    <img id="img" alt="AI-generated doodle" />
+    <button id="close" title="Close (Esc)">✕</button>
+    <script type="module" src="./main.ts"></script>
+  </body>
+</html>

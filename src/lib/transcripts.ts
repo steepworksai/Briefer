@@ -155,14 +155,6 @@ export async function extractYouTubeTranscriptInPage(): Promise<{ title: string;
   }
 }
 
-// Keep the old name as an alias so any other callers aren't broken
-export const extractYouTubeInfoInPage = extractYouTubeTranscriptInPage;
-
-/** @deprecated Use extractYouTubeTranscriptInPage which fetches captions in-page */
-export async function fetchYouTubeTranscript(_captionUrl: string): Promise<string> {
-  throw new Error("fetchYouTubeTranscript is deprecated; use extractYouTubeTranscriptInPage instead.");
-}
-
 // ─── DeepLearning.AI ──────────────────────────────────────────────────────────
 // Runs inside the page via executeScript — must be self-contained, no imports
 export async function extractDeepLearningTranscriptInPage(): Promise<{ title: string; transcript: string } | null> {
