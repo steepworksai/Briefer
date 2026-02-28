@@ -1,0 +1,17 @@
+/* Page-level overrides — standalone whiteboard tab/window only.
+   NOT imported by Whiteboard.tsx so these never leak into the side panel. */
+
+* { box-sizing: border-box; margin: 0; padding: 0; }
+
+html,
+body {
+  width: 100%;
+  height: 100%;
+  overflow: hidden;
+  background: #0f172a;
+}
+
+#root {
+  width: 100%;
+  height: 100%;
+}

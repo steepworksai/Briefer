@@ -1,9 +1,11 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useSpeech, type SpeechEngine } from "../hooks/useSpeech";
 import { ELEVENLABS_VOICES } from "../../lib/elevenlabs";
+import { INWORLD_VOICES } from "../../lib/inworld";
 
 interface SpeechPlayerProps {
   text: string;
+  children?: ReactNode;
 }
 
 const RATES = [0.75, 1, 1.25, 1.5, 1.75, 2];
@@ -12,19 +14,22 @@ function voiceLabel(name: string) {
   return name.replace("Google ", "").replace(" (Natural)", "");
 }
 
-export function SpeechPlayer({ text }: SpeechPlayerProps) {
+export function SpeechPlayer({ text, children }: SpeechPlayerProps) {
   const {
     status, rate, engine,
     browserVoices, selectedBrowserVoice,
     elVoiceId, elApiKey,
-    setEngine, setElVoiceId, setSelectedBrowserVoice,
-    saveElApiKey,
+    iwVoiceId, iwApiKey,
+    setEngine, setElVoiceId, setIwVoiceId, setSelectedBrowserVoice,
+    saveElApiKey, saveIwApiKey,
     speak, pause, resume, stop, changeRate,
   } = useSpeech(text);
 
   const [showElKeyInput, setShowElKeyInput] = useState(false);
+  const [showIwKeyInput, setShowIwKeyInput] = useState(false);
   const [keyDraft, setKeyDraft]             = useState("");
 
+  const showKeyInput = showElKeyInput || showIwKeyInput;
   const isIdle    = status === "idle";
   const isLoading = status === "loading";
   const isPlaying = status === "playing";
@@ -33,14 +38,26 @@ export function SpeechPlayer({ text }: SpeechPlayerProps) {
   function handleEngineSwitch(e: SpeechEngine) {
     stop();
     setEngine(e);
+    setShowElKeyInput(false);
+    setShowIwKeyInput(false);
+    setKeyDraft("");
     if (e === "elevenlabs" && !elApiKey) setShowElKeyInput(true);
+    if (e === "inworld"    && !iwApiKey) setShowIwKeyInput(true);
   }
 
-  function handleSaveKey() {
+  function handleSaveElKey() {
     saveElApiKey(keyDraft.trim());
     setShowElKeyInput(false);
     setKeyDraft("");
   }
+
+  function handleSaveIwKey() {
+    saveIwApiKey(keyDraft.trim());
+    setShowIwKeyInput(false);
+    setKeyDraft("");
+  }
+
+  const activeIwVoice = INWORLD_VOICES.find((v) => v.id === iwVoiceId);
 
   return (
     <div className="speech-player">
@@ -59,11 +76,26 @@ export function SpeechPlayer({ text }: SpeechPlayerProps) {
         >
           ElevenLabs ✦
         </button>
+        <button
+          className={`speech-engine__btn ${engine === "inworld" ? "speech-engine__btn--active" : ""}`}
+          onClick={() => handleEngineSwitch("inworld")}
+        >
+          InWorld ✦
+        </button>
         {engine === "elevenlabs" && elApiKey && (
           <button
             className="speech-engine__reset"
-            onClick={() => setShowElKeyInput(true)}
-            title="Change API key"
+            onClick={() => { setShowElKeyInput(true); setShowIwKeyInput(false); setKeyDraft(""); }}
+            title="Change ElevenLabs API key"
+          >
+            🔑
+          </button>
+        )}
+        {engine === "inworld" && iwApiKey && (
+          <button
+            className="speech-engine__reset"
+            onClick={() => { setShowIwKeyInput(true); setShowElKeyInput(false); setKeyDraft(""); }}
+            title="Change InWorld API key"
           >
             🔑
           </button>
@@ -78,32 +110,51 @@ export function SpeechPlayer({ text }: SpeechPlayerProps) {
             placeholder="ElevenLabs API key..."
             value={keyDraft}
             onChange={(e) => setKeyDraft(e.target.value)}
-            onKeyDown={(e) => e.key === "Enter" && handleSaveKey()}
+            onKeyDown={(e) => e.key === "Enter" && handleSaveElKey()}
             autoFocus
           />
-          <button onClick={handleSaveKey} disabled={!keyDraft.trim()}>Save</button>
-          <a
-            href="https://elevenlabs.io/app/settings/api-keys"
-            target="_blank"
-            rel="noreferrer"
-          >
+          <button onClick={handleSaveElKey} disabled={!keyDraft.trim()}>Save</button>
+          <a href="https://elevenlabs.io/app/settings/api-keys" target="_blank" rel="noreferrer">
             Get free key →
           </a>
         </div>
       )}
 
+      {/* InWorld key input */}
+      {showIwKeyInput && (
+        <div className="speech-el-setup">
+          <input
+            type="password"
+            placeholder="InWorld API key (Base64)..."
+            value={keyDraft}
+            onChange={(e) => setKeyDraft(e.target.value)}
+            onKeyDown={(e) => e.key === "Enter" && handleSaveIwKey()}
+            autoFocus
+          />
+          <button onClick={handleSaveIwKey} disabled={!keyDraft.trim()}>Save</button>
+          <a href="https://inworld.ai/tts-api" target="_blank" rel="noreferrer">
+            Get key →
+          </a>
+        </div>
+      )}
+
       {/* Voice selector */}
-      {!showElKeyInput && (
+      {!showKeyInput && (
         <div className="speech-voice">
           <label>Voice</label>
           {engine === "elevenlabs" ? (
-            <select
-              value={elVoiceId}
-              onChange={(e) => setElVoiceId(e.target.value)}
-            >
+            <select value={elVoiceId} onChange={(e) => setElVoiceId(e.target.value)}>
               {ELEVENLABS_VOICES.map((v) => (
                 <option key={v.id} value={v.id}>
                   {v.name} — {v.description}
+                </option>
+              ))}
+            </select>
+          ) : engine === "inworld" ? (
+            <select value={iwVoiceId} onChange={(e) => setIwVoiceId(e.target.value)}>
+              {INWORLD_VOICES.map((v) => (
+                <option key={v.id} value={v.id}>
+                  {v.id} — {v.description}
                 </option>
               ))}
             </select>
@@ -126,7 +177,7 @@ export function SpeechPlayer({ text }: SpeechPlayerProps) {
       )}
 
       {/* Playback controls */}
-      {!showElKeyInput && (
+      {!showKeyInput && (
         <div className="speech-player__controls">
           {(isIdle || isLoading) && (
             <button
@@ -150,6 +201,8 @@ export function SpeechPlayer({ text }: SpeechPlayerProps) {
           {!isIdle && !isLoading && (
             <button className="speech-btn speech-btn--stop" onClick={stop}>⏹</button>
           )}
+
+          {children}
 
           <div className="speech-rate">
             {RATES.map((r) => (
@@ -176,13 +229,14 @@ export function SpeechPlayer({ text }: SpeechPlayerProps) {
           <span className="speech-pulse" />
           {engine === "elevenlabs"
             ? `ElevenLabs · ${ELEVENLABS_VOICES.find((v) => v.id === elVoiceId)?.name ?? ""}...`
+            : engine === "inworld"
+            ? `InWorld · ${activeIwVoice?.id ?? ""}...`
             : `${voiceLabel(selectedBrowserVoice?.name ?? "Browser")}...`}
         </div>
       )}
       {isPaused && (
         <div className="speech-player__status speech-player__status--paused">Paused</div>
       )}
-
 
     </div>
   );

@@ -75,6 +75,18 @@ export async function extractYouTubeTranscriptInPage(): Promise<{ title: string;
     const raw: string = best.baseUrl ?? "";
     if (!raw) return { title, transcript: "" };
 
+    // Detect whether the signed caption URL has already expired.
+    // If so, return null immediately so App.tsx can surface a "refresh page" prompt
+    // instead of the misleading "no captions available" message.
+    const expireMatch = raw.match(/[?&]expire=(\d+)/);
+    if (expireMatch) {
+      const expireTs = parseInt(expireMatch[1], 10);
+      if (expireTs < Math.floor(Date.now() / 1000)) {
+        // Signed URL is expired — signal with null so caller can ask user to refresh
+        return null;
+      }
+    }
+
     // Helper: parse a raw caption response string (JSON3 or XML) into plain text.
     const parseCaptionBody = (bodyText: string): string => {
       if (!bodyText || bodyText.trim().length === 0) return "";
@@ -119,10 +131,16 @@ export async function extractYouTubeTranscriptInPage(): Promise<{ title: string;
       if (t2.length > 0) return { title, transcript: t2 };
     }
 
-    // Attempt 3: YouTube public timedtext API — works for most videos with auto-captions,
-    // does not require signed parameters or session cookies.
+    // Attempt 3: YouTube public timedtext API.
+    // Include kind=asr for auto-generated tracks; this is required for YouTube to
+    // return the auto-generated caption data via the unsigned endpoint.
     const lang = (best.languageCode ?? "en").split("-")[0];
-    const timedtextUrl = `https://www.youtube.com/api/timedtext?v=${encodeURIComponent(currentVideoId)}&lang=${encodeURIComponent(lang)}&fmt=json3`;
+    const isAsr = best.kind === "asr";
+    const timedtextUrl =
+      `https://www.youtube.com/api/timedtext?v=${encodeURIComponent(currentVideoId)}` +
+      `&lang=${encodeURIComponent(lang)}` +
+      (isAsr ? "&kind=asr" : "") +
+      "&fmt=json3";
     const resp3 = await fetch(timedtextUrl);
     if (resp3.ok) {
       const body3 = await resp3.text();

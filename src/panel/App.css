@@ -645,3 +645,126 @@ p.tone {
 .token-setup a:hover {
   text-decoration: underline;
 }
+
+/* Follow-up bar */
+.follow-up {
+  margin-top: 16px;
+  padding-top: 12px;
+  border-top: 1px solid #e5e7eb;
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+}
+
+.follow-up__input-row {
+  display: flex;
+  gap: 6px;
+  align-items: center;
+}
+
+.follow-up__mic {
+  padding: 6px 9px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  background: #fff;
+  cursor: pointer;
+  font-size: 14px;
+  line-height: 1;
+  transition: all 0.15s;
+  flex-shrink: 0;
+}
+
+.follow-up__mic:hover {
+  background: #f3f4f6;
+}
+
+.follow-up__mic--active {
+  background: #fee2e2;
+  border-color: #fca5a5;
+  animation: pulse 1.2s ease-in-out infinite;
+}
+
+.follow-up__input {
+  flex: 1;
+  min-width: 0;
+  padding: 7px 10px;
+  border: 1px solid #e5e7eb;
+  border-radius: 6px;
+  font-size: 13px;
+  font-family: inherit;
+  outline: none;
+  transition: border-color 0.15s;
+}
+
+.follow-up__input:focus {
+  border-color: #6366f1;
+}
+
+.follow-up__btn {
+  padding: 7px 14px;
+  background: #6366f1;
+  color: #fff;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 600;
+  cursor: pointer;
+  flex-shrink: 0;
+  transition: background 0.15s;
+}
+
+.follow-up__btn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.follow-up__btn:disabled {
+  opacity: 0.5;
+  cursor: not-allowed;
+}
+
+.follow-up__answer {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 8px;
+  padding: 10px 12px;
+  font-size: 13px;
+  color: #374151;
+  line-height: 1.6;
+  white-space: pre-wrap;
+}
+
+/* ── Doodle FAB + morph overlay ──────────────────────────────────────────── */
+
+/*
+ * FAB sits fixed at bottom-right.
+ * Its centre is at:  right = 16 + 26 = 42 px from right edge
+ *                   bottom = 20 + 26 = 46 px from bottom edge
+ * The clip-path circle origin matches those values exactly so the
+ * overlay appears to grow out of — and collapse back into — the button.
+ */
+
+/* ── Doodle button (inline inside SpeechPlayer controls) ─────────────────── */
+
+.doodle-btn {
+  padding: 7px 12px;
+  border-radius: 6px;
+  background: #6366f1;
+  color: #fff;
+  font-size: 13px;
+  font-weight: 600;
+  border: none;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.15s, opacity 0.15s;
+  flex-shrink: 0;
+}
+
+.doodle-btn:hover:not(:disabled) {
+  background: #4f46e5;
+}
+
+.doodle-btn--loading,
+.doodle-btn:disabled {
+  opacity: 0.55;
+  cursor: not-allowed;
+}

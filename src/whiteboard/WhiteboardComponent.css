@@ -1,0 +1,189 @@
+/* Component styles — safe to import anywhere (no html/body overrides) */
+
+.wb {
+  display: flex;
+  flex-direction: column;
+  width: 100%;
+  height: 100%;
+  background: #0f172a;
+  overflow: hidden;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────────────── */
+
+.wb__toolbar {
+  display: flex;
+  align-items: center;
+  gap: 4px;
+  padding: 6px 10px;
+  background: #1e293b;
+  border-bottom: 1px solid #2d3f55;
+  flex-shrink: 0;
+  flex-wrap: nowrap;
+  user-select: none;
+  min-height: 46px;
+}
+
+.wb__brand {
+  font-size: 18px;
+  flex-shrink: 0;
+  line-height: 1;
+}
+
+.wb__sep {
+  width: 1px;
+  height: 22px;
+  background: #334155;
+  flex-shrink: 0;
+  margin: 0 2px;
+}
+
+/* ── Tool group ──────────────────────────────────────────────────────────── */
+
+.wb__tools {
+  display: flex;
+  gap: 2px;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+/* Icon-only tool buttons */
+.wb__tool {
+  width: 30px;
+  height: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  border-radius: 6px;
+  font-size: 14px;
+  cursor: pointer;
+  transition: background 0.1s, color 0.1s;
+  flex-shrink: 0;
+  padding: 0;
+}
+
+.wb__tool:hover  { background: #334155; color: #e2e8f0; }
+.wb__tool--active {
+  background: #6366f1;
+  color: #fff;
+  box-shadow: 0 0 0 2px #818cf8;
+}
+
+/* ── Color swatches ──────────────────────────────────────────────────────── */
+
+.wb__colors {
+  display: flex;
+  gap: 5px;
+  align-items: center;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 4px 6px;
+}
+
+.wb__color {
+  width: 16px;
+  height: 16px;
+  border-radius: 50%;
+  border: 2px solid transparent;
+  cursor: pointer;
+  padding: 0;
+  transition: border-color 0.1s, transform 0.1s;
+  flex-shrink: 0;
+  box-shadow: 0 1px 3px rgba(0,0,0,0.4);
+}
+
+.wb__color:hover      { transform: scale(1.3); }
+.wb__color--active    {
+  border-color: #f1f5f9;
+  transform: scale(1.2);
+  box-shadow: 0 0 0 2px #6366f1, 0 1px 3px rgba(0,0,0,0.4);
+}
+
+/* ── Action buttons ──────────────────────────────────────────────────────── */
+
+.wb__actions {
+  display: flex;
+  gap: 3px;
+  margin-left: auto;
+  background: #0f172a;
+  border-radius: 8px;
+  padding: 3px;
+}
+
+.wb__action {
+  height: 30px;
+  padding: 0 10px;
+  background: transparent;
+  color: #94a3b8;
+  border: none;
+  border-radius: 6px;
+  font-size: 13px;
+  font-weight: 500;
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.1s, color 0.1s;
+  flex-shrink: 0;
+  min-width: 30px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.wb__action:hover:not(:disabled)           { background: #334155; color: #e2e8f0; }
+.wb__action:disabled                        { opacity: 0.3; cursor: not-allowed; }
+.wb__action--danger:hover:not(:disabled)    { background: #7f1d1d; color: #fca5a5; }
+.wb__action--close                          { color: #64748b; }
+.wb__action--close:hover:not(:disabled)     { background: #374151; color: #f1f5f9; }
+
+/* ── Status bar ──────────────────────────────────────────────────────────── */
+
+.wb__status {
+  font-size: 11px;
+  color: #a5b4fc;
+  text-align: center;
+  padding: 3px 8px;
+  background: #1e1b4b;
+  border-bottom: 1px solid #312e81;
+  flex-shrink: 0;
+  animation: wb-pulse 1.4s ease-in-out infinite;
+}
+
+@keyframes wb-pulse {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.5; }
+}
+
+/* ── Canvas area ─────────────────────────────────────────────────────────── */
+
+.wb__wrap {
+  flex: 1;
+  overflow: hidden;
+  display: flex;
+  background: #f8fafc;
+  position: relative;
+}
+
+/* SVG fills its pixel-accurate container exactly */
+.wb__svg {
+  display: block;
+  flex-shrink: 0;
+}
+
+/* ── Hint bar ────────────────────────────────────────────────────────────── */
+
+.wb__hint {
+  font-size: 10px;
+  color: #475569;
+  text-align: center;
+  padding: 3px 8px;
+  background: #1e293b;
+  border-top: 1px solid #2d3f55;
+  flex-shrink: 0;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}

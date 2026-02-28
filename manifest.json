@@ -3,8 +3,8 @@
   "name": "QuickRead",
   "description": "Summarize any web page instantly",
   "version": "1.0.0",
-  "permissions": ["activeTab", "storage", "scripting", "sidePanel", "tabs"],
-  "host_permissions": ["<all_urls>", "http://localhost:3747/", "https://api.elevenlabs.io/", "https://generativelanguage.googleapis.com/"],
+  "permissions": ["activeTab", "storage", "scripting", "sidePanel", "tabs", "windows"],
+  "host_permissions": ["<all_urls>", "http://localhost:3747/", "https://api.elevenlabs.io/", "https://api.inworld.ai/", "https://generativelanguage.googleapis.com/"],
   "action": {
     "default_icon": {
       "16": "icons/icon16.png",
@@ -23,6 +23,12 @@
     {
       "matches": ["<all_urls>"],
       "js": ["src/content/index.ts"]
+    }
+  ],
+  "web_accessible_resources": [
+    {
+      "resources": ["src/whiteboard/index.html"],
+      "matches": ["<all_urls>"]
     }
   ]
 }

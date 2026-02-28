@@ -4,11 +4,12 @@ import { Toolbar } from "./components/Toolbar";
 import { TokenSetup } from "./components/TokenSetup";
 import { LogViewer } from "./components/LogViewer";
 import { SpeechPlayer } from "./components/SpeechPlayer";
+import { FollowUp } from "./components/FollowUp";
+import { DoodleMindMap } from "./components/DoodleMindMap";
 import { logger } from "../lib/logger";
-import type { SummaryResult, SummaryMode } from "../lib/api";
+import type { SummaryResult } from "../lib/api";
 import {
   detectPlatform,
-  extractYouTubeTranscriptInPage,
   extractDeepLearningTranscriptInPage,
 } from "../lib/transcripts";
 import "./App.css";
@@ -27,16 +28,8 @@ function estimateReadingTime(wordCount: number): number {
 function buildReadableText(result: SummaryResult): string {
   const parts: string[] = [];
   parts.push(`TL;DR. ${result.tldr}`);
-  if (result.mode === "exploratory") {
-    if (result.keyPoints.length) parts.push(`Key points. ${result.keyPoints.join(". ")}`);
-    if (result.takeaway)         parts.push(`Takeaway. ${result.takeaway}`);
-  } else {
-    if (result.coreProblem)        parts.push(`Core problem. ${result.coreProblem}`);
-    if (result.solutionMechanism)  parts.push(`Solution. ${result.solutionMechanism}`);
-    if (result.structuralShift)    parts.push(`Structural shift. ${result.structuralShift}`);
-    if (result.whyItsBetter.length)  parts.push(`Why it's better. ${result.whyItsBetter.join(". ")}`);
-    if (result.keyTakeaways.length)  parts.push(`Key takeaways. ${result.keyTakeaways.join(". ")}`);
-  }
+  if (result.keyPoints.length) parts.push(`Key points. ${result.keyPoints.join(". ")}`);
+  if (result.takeaway)         parts.push(`Takeaway. ${result.takeaway}`);
   return parts.join(" ");
 }
 
@@ -88,19 +81,18 @@ const PLATFORM_LABELS: Record<string, string> = {
 export default function App() {
   const [state, setState]       = useState<State>({ status: "idle" });
   const [showLogs, setShowLogs] = useState(false);
-  const [mode, setMode]         = useState<SummaryMode>("exploratory");
+  const [geminiKey, setGeminiKey] = useState("");
 
   useEffect(() => {
-    runSummary("exploratory");
+    runSummary();
   }, []);
 
-  async function runSummary(selectedMode?: SummaryMode) {
-    const activeMode = selectedMode ?? mode;
-    setMode(activeMode);
+  async function runSummary() {
     setState({ status: "loading" });
-    await logger.info("panel", `Starting summarization [${activeMode}]`);
+    await logger.info("panel", "Starting summarization");
 
     const { geminiApiKey } = await chrome.storage.sync.get("geminiApiKey");
+    if (geminiApiKey) setGeminiKey(geminiApiKey as string);
     if (!geminiApiKey) {
       await logger.warn("panel", "No API key found — showing token setup");
       setState({ status: "no-key" });
@@ -120,21 +112,19 @@ export default function App() {
 
       // ── YouTube ─────────────────────────────────────────────────────────────
       if (platform === "youtube") {
-        // Caption fetch happens inside the page (MAIN world) so YouTube's
-        // signed URLs are called with the page's session — no CORS/expiry issues.
-        const ytResults = await chrome.scripting.executeScript({
-          target: { tabId: tab.id },
-          func: extractYouTubeTranscriptInPage,
-          world: "MAIN",
+        videoTitle = tab.title ?? "YouTube Video";
+        await logger.info("panel", `YouTube: sending URL to Gemini directly — "${videoTitle}"`);
+
+        const videoResponse = await chrome.runtime.sendMessage({
+          type: "SUMMARIZE_VIDEO",
+          payload: { videoUrl: tab.url, apiKey: geminiApiKey },
         });
-        const ytInfo = ytResults[0]?.result;
 
-        if (!ytInfo) throw new Error("Could not read YouTube player data. Try refreshing the page.");
-        if (!ytInfo.transcript) throw new Error("This video has no captions available. QuickRead needs subtitles to summarize a video.");
+        if (!videoResponse.success) throw new Error(videoResponse.error);
 
-        videoTitle = ytInfo.title;
-        text = ytInfo.transcript;
-        await logger.info("panel", `YouTube: fetched transcript for "${videoTitle}"`);
+        await logger.info("panel", "YouTube summary received");
+        setState({ status: "done", result: videoResponse.result, timeSaved: 0, videoTitle, platform: "youtube" });
+        return;
 
       // ── DeepLearning.AI ──────────────────────────────────────────────────────
       } else if (platform === "deeplearning") {
@@ -149,7 +139,6 @@ export default function App() {
           text = dlInfo.transcript;
           await logger.info("panel", `DeepLearning.AI: extracted transcript for "${videoTitle}"`);
         } else {
-          // Transcript panel not visible or selectors missed — fall back to generic page text
           await logger.warn("panel", "DeepLearning.AI transcript extraction returned null; falling back to generic page text");
           const fallbackResults = await chrome.scripting.executeScript({
             target: { tabId: tab.id },
@@ -188,7 +177,7 @@ export default function App() {
       const timeSaved = estimateReadingTime(wordCount);
       const response = await chrome.runtime.sendMessage({
         type: "SUMMARIZE",
-        payload: { text, apiKey: geminiApiKey, mode: activeMode },
+        payload: { text, apiKey: geminiApiKey },
       });
 
       if (!response.success) throw new Error(response.error);
@@ -242,23 +231,6 @@ export default function App() {
           </div>
         )}
 
-        {(state.status === "done" || state.status === "loading") && (
-          <div className="mode-selector">
-            <button
-              className={`mode-btn ${mode === "exploratory" ? "mode-btn--active" : ""}`}
-              onClick={() => runSummary("exploratory")}
-            >
-              🟢 Quick Read
-            </button>
-            <button
-              className={`mode-btn ${mode === "deep" ? "mode-btn--active" : ""}`}
-              onClick={() => runSummary("deep")}
-            >
-              🔵 Deep Dive
-            </button>
-          </div>
-        )}
-
         {state.status === "done" && (
           <>
             {state.videoTitle && (
@@ -269,9 +241,12 @@ export default function App() {
                 <p className="video-title">{state.videoTitle}</p>
               </div>
             )}
-            <SpeechPlayer text={buildReadableText(state.result)} />
+            <SpeechPlayer text={buildReadableText(state.result)}>
+              <DoodleMindMap result={state.result} />
+            </SpeechPlayer>
             <Summary result={state.result} readingTimeSaved={state.timeSaved} />
             <Toolbar summary={state.result.tldr} onRefresh={() => runSummary()} />
+            <FollowUp context={buildReadableText(state.result)} apiKey={geminiKey} />
           </>
         )}
       </main>

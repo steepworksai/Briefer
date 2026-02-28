@@ -1,8 +1,9 @@
 import { useState, useEffect, useRef, useCallback } from "react";
 import { elevenLabsTTS, ELEVENLABS_VOICES } from "../../lib/elevenlabs";
+import { inworldTTS, INWORLD_VOICES } from "../../lib/inworld";
 
 export type SpeechStatus = "idle" | "loading" | "playing" | "paused";
-export type SpeechEngine  = "elevenlabs" | "browser";
+export type SpeechEngine  = "browser" | "elevenlabs" | "inworld";
 
 const BROWSER_VOICE_PRIORITY = [
   "Google US English",
@@ -37,7 +38,11 @@ export function useSpeech(text: string) {
   const [elVoiceId, setElVoiceId]     = useState(ELEVENLABS_VOICES[0].id);
   const [elApiKey, setElApiKey]       = useState("");
 
-  // Audio element for ElevenLabs playback
+  // InWorld voice state
+  const [iwVoiceId, setIwVoiceId]     = useState(INWORLD_VOICES[0].id);
+  const [iwApiKey, setIwApiKey]       = useState("");
+
+  // Audio element for API-based playback
   const audioRef     = useRef<HTMLAudioElement | null>(null);
   const audioBlobUrl = useRef<string | null>(null);
 
@@ -59,13 +64,15 @@ export function useSpeech(text: string) {
     };
   }, [loadBrowserVoices]);
 
-  // Load saved ElevenLabs key
+  // Load saved API keys and auto-select best engine
   useEffect(() => {
-    chrome.storage.sync.get("elApiKey", (res: { elApiKey?: string }) => {
-      if (res.elApiKey) {
-        setElApiKey(res.elApiKey);
-        setEngine("elevenlabs");
-      }
+    chrome.storage.sync.get(["elApiKey", "iwApiKey"], (res) => {
+      const el = (res as { elApiKey?: string; iwApiKey?: string }).elApiKey;
+      const iw = (res as { elApiKey?: string; iwApiKey?: string }).iwApiKey;
+      if (el) setElApiKey(el);
+      if (iw) setIwApiKey(iw);
+      if (iw) setEngine("inworld");
+      else if (el) setEngine("elevenlabs");
     });
   }, []);
 
@@ -87,21 +94,38 @@ export function useSpeech(text: string) {
     setStatus("idle");
   }
 
+  // ── Shared audio playback helper ───────────────────────────────────────────
+  async function playAudioUrl(url: string) {
+    audioBlobUrl.current = url;
+    const audio = new Audio(url);
+    audioRef.current = audio;
+    audio.playbackRate = rate;
+    audio.onplay  = () => setStatus("playing");
+    audio.onpause = () => setStatus("paused");
+    audio.onended = () => { setStatus("idle"); URL.revokeObjectURL(url); };
+    audio.onerror = () => setStatus("idle");
+    await audio.play();
+  }
+
   // ── ElevenLabs playback ────────────────────────────────────────────────────
   async function speakElevenLabs() {
     stopAll();
     setStatus("loading");
     try {
       const url = await elevenLabsTTS(text, elVoiceId, elApiKey);
-      audioBlobUrl.current = url;
-      const audio = new Audio(url);
-      audioRef.current = audio;
-      audio.playbackRate = rate;
-      audio.onplay  = () => setStatus("playing");
-      audio.onpause = () => setStatus("paused");
-      audio.onended = () => { setStatus("idle"); URL.revokeObjectURL(url); };
-      audio.onerror = () => setStatus("idle");
-      await audio.play();
+      await playAudioUrl(url);
+    } catch {
+      setStatus("idle");
+    }
+  }
+
+  // ── InWorld playback ───────────────────────────────────────────────────────
+  async function speakInworld() {
+    stopAll();
+    setStatus("loading");
+    try {
+      const url = await inworldTTS(text, iwVoiceId, iwApiKey);
+      await playAudioUrl(url);
     } catch {
       setStatus("idle");
     }
@@ -123,11 +147,13 @@ export function useSpeech(text: string) {
   }
 
   function speak() {
-    engine === "elevenlabs" && elApiKey ? speakElevenLabs() : speakBrowser();
+    if (engine === "inworld" && iwApiKey)     speakInworld();
+    else if (engine === "elevenlabs" && elApiKey) speakElevenLabs();
+    else speakBrowser();
   }
 
   function pause() {
-    if (engine === "elevenlabs" && audioRef.current) {
+    if ((engine === "elevenlabs" || engine === "inworld") && audioRef.current) {
       audioRef.current.pause();
     } else {
       window.speechSynthesis.pause();
@@ -136,7 +162,7 @@ export function useSpeech(text: string) {
   }
 
   function resume() {
-    if (engine === "elevenlabs" && audioRef.current) {
+    if ((engine === "elevenlabs" || engine === "inworld") && audioRef.current) {
       audioRef.current.play();
     } else {
       window.speechSynthesis.resume();
@@ -155,14 +181,23 @@ export function useSpeech(text: string) {
     setEngine("elevenlabs");
   }
 
+  function saveIwApiKey(key: string) {
+    setIwApiKey(key);
+    chrome.storage.sync.set({ iwApiKey: key });
+    setEngine("inworld");
+  }
+
   return {
     status, rate, engine,
     browserVoices, selectedBrowserVoice,
     elVoiceId, elApiKey,
+    iwVoiceId, iwApiKey,
     setEngine,
     setElVoiceId,
+    setIwVoiceId,
     setSelectedBrowserVoice: (v: SpeechSynthesisVoice) => setSelectedBrowserVoice(v),
     saveElApiKey,
+    saveIwApiKey,
     speak, pause, resume, stop: stopAll, changeRate,
   };
 }
