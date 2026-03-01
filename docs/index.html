@@ -17,6 +17,13 @@
   <!-- Animated background blobs -->
   <div style="position:fixed;width:500px;height:500px;top:40%;left:50%;transform:translate(-50%,-50%);border-radius:50%;filter:blur(90px);background:radial-gradient(circle,rgba(45,107,45,0.09) 0%,transparent 70%);z-index:-1;pointer-events:none;animation:blobShift3 22s ease-in-out infinite;"></div>
 
+  <!-- Breadcrumb nav -->
+  <nav class="product-nav">
+    <a href="https://steepworksai.com">SteepWorksAI</a>
+    <span class="sep">/</span>
+    <span class="current">Briefer</span>
+  </nav>
+
   <!-- Hero -->
   <div class="hero">
     <div class="logo-wrap">
@@ -26,32 +33,73 @@
     <div class="badge">Chrome &amp; Edge Extension · Free · Open Source · Powered by Gemini AI</div>
     <h1>Understand any page<br>in seconds</h1>
 
-    <!-- Feature pills -->
-    <div class="feature-pills">
-      <span class="feature-pill"><span class="pill-icon">⚡</span> Instant summaries</span>
-      <span class="feature-pill"><span class="pill-icon">📺</span> YouTube support</span>
-      <span class="feature-pill"><span class="pill-icon">🔵</span> Deep Dive mode</span>
-      <span class="feature-pill"><span class="pill-icon">🎨</span> AI Doodle</span>
-      <span class="feature-pill"><span class="pill-icon">📚</span> History &amp; topics</span>
-      <span class="feature-pill"><span class="pill-icon">🔑</span> Bring your own key</span>
+    <!-- Feature grid -->
+    <p class="section-label">Features</p>
+    <div class="feature-grid">
+      <div class="feature-item">
+        <span class="fi-icon">⚡</span>
+        <div class="fi-body">
+          <h3>Instant summaries</h3>
+          <p>TLDR, key points, and takeaway generated in seconds from any article or video.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="fi-icon">📺</span>
+        <div class="fi-body">
+          <h3>YouTube support</h3>
+          <p>Summarizes YouTube videos and DeepLearning.AI courses directly from their transcripts.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="fi-icon">🔵</span>
+        <div class="fi-body">
+          <h3>Deep Dive mode</h3>
+          <p>Goes beyond a summary — breaks down the core argument, solution mechanism, and why it matters.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="fi-icon">🎨</span>
+        <div class="fi-body">
+          <h3>AI Doodle</h3>
+          <p>Generates a sketchnote-style visual summary to help content stick in memory.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="fi-icon">📚</span>
+        <div class="fi-body">
+          <h3>History &amp; topics</h3>
+          <p>Every summary saved automatically and grouped by topic — revisit anything, anytime.</p>
+        </div>
+      </div>
+      <div class="feature-item">
+        <span class="fi-icon">🔑</span>
+        <div class="fi-body">
+          <h3>Bring your own key</h3>
+          <p>Uses your Google Gemini API key directly. No Briefer subscription or monthly fee.</p>
+        </div>
+      </div>
     </div>
 
     <p class="sub">Briefer reads any article, blog post, or YouTube video and generates a structured AI summary — TLDR, key points, and takeaway — instantly in your browser's side panel.</p>
     <div class="cta-group">
-      <a class="cta cta-chrome" href="https://github.com/steepworksai/Briefer" target="_blank">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" style="flex-shrink:0"><circle cx="50" cy="50" r="45" fill="#EA4335"/><path d="M50,50L88.97,72.5A45,45,0,0,1,11.03,72.5Z" fill="#FBBC05"/><path d="M50,50L11.03,72.5A45,45,0,0,1,50,5Z" fill="#34A853"/><circle cx="50" cy="50" r="28" fill="#e8eaed"/><circle cx="50" cy="50" r="20" fill="#4285F4"/></svg>
-        Add to Chrome — It's Free
-      </a>
-      <a class="cta cta-edge" href="https://github.com/steepworksai/Briefer" target="_blank">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" style="flex-shrink:0"><path d="M85,44C85,24,69,8,50,8C31,8,15,24,15,44c0,10,4,20,12,27h46C81,64,85,54,85,44zM50,22c11,0,21,9,21,21H29C29,31,39,22,50,22z" fill="#0078D7"/><path d="M27,71c7,8,16,13,23,13c12,0,23-7,28-17H27Z" fill="#33AADC"/></svg>
-        Add to Edge — It's Free
-      </a>
-      <a class="cta cta-gh" href="https://github.com/steepworksai/Briefer" target="_blank">
-        ⭐ Star on GitHub
-      </a>
-      <a class="cta cta-contribute" href="https://github.com/steepworksai/Briefer" target="_blank">
-        🤝 Contribute
-      </a>
+      <div class="cta-install">
+        <a class="cta cta-chrome" href="https://github.com/steepworksai/Briefer" target="_blank">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="flex-shrink:0"><path d="M50,50 L11.03,27.5 A45,45 0 0,1 88.97,27.5 Z" fill="#EA4335"/><path d="M50,50 L88.97,27.5 A45,45 0 0,1 50,95 Z" fill="#FBBC05"/><path d="M50,50 L50,95 A45,45 0 0,1 11.03,27.5 Z" fill="#34A853"/><circle cx="50" cy="50" r="30" fill="#fff"/><circle cx="50" cy="50" r="21" fill="#4285F4"/></svg>
+          Add to Chrome — It's Free
+        </a>
+        <a class="cta cta-edge" href="https://github.com/steepworksai/Briefer" target="_blank">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" style="flex-shrink:0"><path d="M85,44C85,24,69,8,50,8C31,8,15,24,15,44c0,10,4,20,12,27h46C81,64,85,54,85,44zM50,22c11,0,21,9,21,21H29C29,31,39,22,50,22z" fill="#0078D7"/><path d="M27,71c7,8,16,13,23,13c12,0,23-7,28-17H27Z" fill="#33AADC"/></svg>
+          Add to Edge — It's Free
+        </a>
+      </div>
+      <div class="cta-community">
+        <a class="cta cta-gh" href="https://github.com/steepworksai/Briefer" target="_blank">
+          ⭐ Star on GitHub
+        </a>
+        <a class="cta cta-contribute" href="https://github.com/steepworksai/Briefer" target="_blank">
+          🤝 Contribute
+        </a>
+      </div>
     </div>
   </div>
 
@@ -60,22 +108,22 @@
     <h2>How it works</h2>
     <div class="steps">
       <div class="step">
-        <div class="step-num">Step 1</div>
+        <div class="step-num">1</div>
         <h3>Add your Gemini key</h3>
         <p>Paste your free Google Gemini API key once. Stored locally in Chrome — never sent anywhere.</p>
       </div>
       <div class="step">
-        <div class="step-num">Step 2</div>
+        <div class="step-num">2</div>
         <h3>Open any page</h3>
         <p>Navigate to an article, blog post, research paper, or YouTube video.</p>
       </div>
       <div class="step">
-        <div class="step-num">Step 3</div>
+        <div class="step-num">3</div>
         <h3>Click the Briefer icon</h3>
         <p>The side panel opens and your summary appears in seconds — no copy-pasting required.</p>
       </div>
       <div class="step">
-        <div class="step-num">Step 4</div>
+        <div class="step-num">4</div>
         <h3>Browse your history</h3>
         <p>Every summary is saved automatically and grouped by topic — your personal knowledge base.</p>
       </div>
@@ -85,20 +133,24 @@
   <!-- Bottom CTA -->
   <div class="cta-bottom">
     <div class="cta-group">
-      <a class="cta cta-chrome" href="https://github.com/steepworksai/Briefer" target="_blank">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" style="flex-shrink:0"><circle cx="50" cy="50" r="45" fill="#EA4335"/><path d="M50,50L88.97,72.5A45,45,0,0,1,11.03,72.5Z" fill="#FBBC05"/><path d="M50,50L11.03,72.5A45,45,0,0,1,50,5Z" fill="#34A853"/><circle cx="50" cy="50" r="28" fill="#e8eaed"/><circle cx="50" cy="50" r="20" fill="#4285F4"/></svg>
-        Add to Chrome — It's Free
-      </a>
-      <a class="cta cta-edge" href="https://github.com/steepworksai/Briefer" target="_blank">
-        <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" style="flex-shrink:0"><path d="M85,44C85,24,69,8,50,8C31,8,15,24,15,44c0,10,4,20,12,27h46C81,64,85,54,85,44zM50,22c11,0,21,9,21,21H29C29,31,39,22,50,22z" fill="#0078D7"/><path d="M27,71c7,8,16,13,23,13c12,0,23-7,28-17H27Z" fill="#33AADC"/></svg>
-        Add to Edge — It's Free
-      </a>
-      <a class="cta cta-gh" href="https://github.com/steepworksai/Briefer" target="_blank">
-        ⭐ Star on GitHub
-      </a>
-      <a class="cta cta-contribute" href="https://github.com/steepworksai/Briefer" target="_blank">
-        🤝 Contribute
-      </a>
+      <div class="cta-install">
+        <a class="cta cta-chrome" href="https://github.com/steepworksai/Briefer" target="_blank">
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 100 100" style="flex-shrink:0"><path d="M50,50 L11.03,27.5 A45,45 0 0,1 88.97,27.5 Z" fill="#EA4335"/><path d="M50,50 L88.97,27.5 A45,45 0 0,1 50,95 Z" fill="#FBBC05"/><path d="M50,50 L50,95 A45,45 0 0,1 11.03,27.5 Z" fill="#34A853"/><circle cx="50" cy="50" r="30" fill="#fff"/><circle cx="50" cy="50" r="21" fill="#4285F4"/></svg>
+          Add to Chrome — It's Free
+        </a>
+        <a class="cta cta-edge" href="https://github.com/steepworksai/Briefer" target="_blank">
+          <svg xmlns="http://www.w3.org/2000/svg" width="32" height="32" viewBox="0 0 100 100" style="flex-shrink:0"><path d="M85,44C85,24,69,8,50,8C31,8,15,24,15,44c0,10,4,20,12,27h46C81,64,85,54,85,44zM50,22c11,0,21,9,21,21H29C29,31,39,22,50,22z" fill="#0078D7"/><path d="M27,71c7,8,16,13,23,13c12,0,23-7,28-17H27Z" fill="#33AADC"/></svg>
+          Add to Edge — It's Free
+        </a>
+      </div>
+      <div class="cta-community">
+        <a class="cta cta-gh" href="https://github.com/steepworksai/Briefer" target="_blank">
+          ⭐ Star on GitHub
+        </a>
+        <a class="cta cta-contribute" href="https://github.com/steepworksai/Briefer" target="_blank">
+          🤝 Contribute
+        </a>
+      </div>
     </div>
   </div>
 
